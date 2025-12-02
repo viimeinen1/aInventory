@@ -32,7 +32,8 @@ public abstract class AbstractUniqueInventory <K extends AbstractUniqueInventory
             builder.requirementFunction,
             builder.defaultClickAction,
             builder.owner,
-            builder.pages
+            builder.pages,
+            builder.disableDrag
         );
     }
 

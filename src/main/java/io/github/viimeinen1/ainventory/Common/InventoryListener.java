@@ -5,6 +5,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,6 +26,16 @@ public class InventoryListener implements Listener {
             return;
         }
         inventory.onInventoryClick(event);
+    }
+
+    @EventHandler
+    public static void onInventoryDrag(InventoryDragEvent event) {
+        Inventory inv = event.getInventory();
+        // return if we don't have this plugin's inv
+        if (inv == null || !(inv.getHolder(false) instanceof AbstractInventoryView inventory)) {
+            return;
+        }
+        inventory.onInventoryDrag(event);
     }
 
     @EventHandler

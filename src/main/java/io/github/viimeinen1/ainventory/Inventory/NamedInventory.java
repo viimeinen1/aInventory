@@ -36,7 +36,8 @@ public final class NamedInventory <T extends Enum<T>> extends AbstractInventory<
             builder.requirementFunction,
             builder.defaultClickAction,
             builder.owner,
-            builder.pages
+            builder.pages,
+            builder.disableDrag
         );
     }
 

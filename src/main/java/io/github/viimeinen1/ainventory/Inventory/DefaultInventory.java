@@ -24,7 +24,8 @@ public final class DefaultInventory extends AbstractInventory<DefaultItemBuilder
             builder.requirementFunction,
             builder.defaultClickAction,
             builder.owner,
-            builder.pages
+            builder.pages,
+            builder.disableDrag
         );
     }
 

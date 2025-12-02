@@ -47,7 +47,8 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
         @Nullable requirementFunction requirementFn,
         @Nullable itemClickFunction defaultClickFn,
         @Nullable UUID owner,
-        @Nullable Map<Integer, inventoryFunction<DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView>> pageInits
+        @Nullable Map<Integer, inventoryFunction<DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView>> pageInits,
+        @NotNull boolean disableDrag
     ) {
         super(
             size,
@@ -58,7 +59,8 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
             requirementFn,
             defaultClickFn,
             owner,
-            pageInits
+            pageInits,
+            disableDrag
         );
     }
 

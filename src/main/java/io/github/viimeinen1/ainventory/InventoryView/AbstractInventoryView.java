@@ -11,6 +11,7 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -132,6 +133,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
     public final Optional<inventoryOpenFunction> openFn;
     public final Optional<inventoryCloseFunction> closeFn;
     public final Optional<UUID> owner;
+    public final boolean disableDrag;
 
     private int page = 0;
 
@@ -165,7 +167,8 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         @Nullable requirementFunction requirementFn,
         @Nullable itemClickFunction defaultClickFn,
         @Nullable UUID owner,
-        @Nullable Map<Integer, inventoryFunction<A, C>> pageInits
+        @Nullable Map<Integer, inventoryFunction<A, C>> pageInits,
+        @NotNull boolean disableDrag
     ) {
 
         if (title != null) {
@@ -180,6 +183,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         this.requirementFn = Optional.ofNullable(requirementFn);
         this.defaultClickFn = Optional.ofNullable(defaultClickFn);
         this.owner = Optional.ofNullable(owner);
+        this.disableDrag = disableDrag;
 
         if (pageInits == null) {
             this.pageInits = new HashMap<>();
@@ -288,6 +292,17 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         if (clickFns.containsKey(event.getSlot())) {
             clickFns.get(event.getSlot()).run(event);
         }
+    }
+
+    @Internal
+    public void onInventoryDrag(@NotNull InventoryDragEvent event) {
+        if (requirementFn.isPresent() && !requirementFn.get().run(event.getWhoClicked())) {
+            event.setCancelled(true);
+            event.getWhoClicked().sendMessage(Messages.NO_USE_PERMISSION);
+            return;
+        }
+
+        if (disableDrag) {event.setCancelled(true);}
     }
 
     @Internal

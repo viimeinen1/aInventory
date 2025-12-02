@@ -34,6 +34,7 @@ public abstract class AbstractInventoryBuilder <
     public requirementFunction requirementFunction;
     public inventoryOpenFunction openFunction;
     public inventoryCloseFunction closeFunction;
+    public boolean disableDrag = true;
 
     // for subclasses to override
     public abstract E getThis();
@@ -157,9 +158,21 @@ public abstract class AbstractInventoryBuilder <
      * If function returns false, all futher execution is blocked.
      * 
      * @param fn {@link requirementFunction}
+     * @return builder
      */
     public E require(requirementFunction fn) {
         this.requirementFunction = fn;
+        return getThis();
+    }
+
+    /**
+     * If dragging items should be disabled in the inventory. Disabled by default.
+     * 
+     * @param disableDrag boolean if drag should be disabled.
+     * @return builder
+     */
+    public E disableDrag(boolean disableDrag) {
+        this.disableDrag = disableDrag;
         return getThis();
     }
 
