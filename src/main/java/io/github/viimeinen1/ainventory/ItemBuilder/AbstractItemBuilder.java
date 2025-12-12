@@ -11,8 +11,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import io.github.viimeinen1.ainventory.Inventory.AbstractInventory;
+import io.github.viimeinen1.ainventory.InventoryView.ItemData;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.itemClickFunction;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.itemReloadFunction;
+import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.itemRequirementFunction;
 import io.papermc.paper.datacomponent.DataComponentType;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemLore;
@@ -25,27 +27,32 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
  */
 public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>> {
 
+    /**
+     * Different types of slots.
+     */
+    public static enum ItemSlotType {
+        BUTTON,
+        CONTAINER,
+        CRAFTING,
+        BORDER,
+        RESULT,
+        CUSTOM
+    }
+
     B inventory;
     itemClickFunction slotFn;
     ItemStack item;
     Set<Integer> slots = new HashSet<>();
     itemReloadFunction<A, B> reloadFn;
+    ItemSlotType slotType = ItemSlotType.CUSTOM;
+    itemRequirementFunction requirementFn;
 
     // for subclasses to override
     public abstract A getThis();
 
     public B build() {
         slots.forEach(slot -> {
-            if (slotFn != null) {
-                inventory.clickFns().put(slot, slotFn);
-            } else {
-                inventory.clickFns().remove(slot);
-            }
-            if (reloadFn != null) {
-                inventory.itemReloads().put(slot, reloadFn);
-            } else {
-                inventory.itemReloads().remove(slot);
-            }
+            inventory.itemData().put(slot, new ItemData<>(slotFn, reloadFn, requirementFn, slotType));
             inventory.getInventory().setItem(slot, item);
         });
         return inventory;
@@ -64,8 +71,12 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
     public AbstractItemBuilder(@NotNull B inventory, @NotNull int slot) {
         this.inventory = inventory;
         this.slots.add(slot);
-        this.slotFn = inventory.clickFns().get(slot);
-        this.reloadFn = inventory.itemReloads().get(slot);
+        var data = inventory.itemData().get(slot);
+        if (data != null) {
+            this.reloadFn = data.reloadFn.orElse(null);
+            this.slotFn = data.clickFn.orElse(null);
+            this.slotType = data.slotType;
+        }
         this.item = inventory.getInventory().getItem(slot);
         if (this.item == null) {
             this.item = ItemStack.of(Material.AIR);
@@ -88,8 +99,12 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
         this.inventory = inventory;
         this.slots.addAll(slots);
         Integer first = slots.iterator().next();
-        this.slotFn = inventory.clickFns().get(first);
-        this.reloadFn = inventory.itemReloads().get(first);
+        var data = inventory.itemData().get(first);
+        if (data != null) {
+            this.reloadFn = data.reloadFn.orElse(null);
+            this.slotFn = data.clickFn.orElse(null);
+            this.slotType = data.slotType;
+        }
         this.item = inventory.getInventory().getItem(first);
         if (this.item == null) {
             this.item = ItemStack.of(Material.AIR);
@@ -291,6 +306,36 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
      */
     public <R> A setData(@NotNull DataComponentType.Valued<R> type, @NotNull R value) {
         item.setData(type, value);
+        return getThis();
+    }
+
+    /**
+     * Set slot type.
+     * 
+     * types:
+     * - BUTTON: only clicking allowed, all modifications disabled
+     * - CONTAINER: placing and taking is allowed
+     * - CRAFTING: same as container, except that the slot is returned back to player inventory on inventory close.
+     * - BORDER: everything disabled
+     * - RESULT: only taking from slot is allowed. Is placed to player inventory if inventory is closed.
+     * - CUSTOM: custom behaviour (default)
+     * 
+     * @param type type of slot
+     * @return
+     */
+    public A slotType(ItemSlotType type) {
+        this.slotType = type;
+        return getThis();
+    }
+
+    /**
+     * Requires to return true to be allowed to be placed to this slot.
+     * 
+     * @param fn requirement function (returns true if item is allowed to be placed here)
+     * @return builder
+     */
+    public A require(itemRequirementFunction fn) {
+        this.requirementFn = fn;
         return getThis();
     }
 

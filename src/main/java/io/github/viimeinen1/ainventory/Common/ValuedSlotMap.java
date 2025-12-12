@@ -11,13 +11,13 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Create paged map for list of values.
  */
-public class PagedSlotMap <T> {
+public class ValuedSlotMap <T> {
     
-    public static record SlotCoordinate(int page, int slot) {};
+    public static record SlotCoordinate(int value, int slot) {};
 
     public final Map<SlotCoordinate, T> values = new HashMap<>();
 
-    public PagedSlotMap(@NotNull Collection<Integer> slots, @NotNull Collection<T> values) {
+    public ValuedSlotMap(@NotNull Collection<Integer> slots, @NotNull Collection<T> values) {
         List<Integer> slotList = slots.stream().collect(Collectors.toList());
         IndexStream.toStream(values).forEach(val -> {
             int page = val.i / slots.size();

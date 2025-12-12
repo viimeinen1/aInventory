@@ -6,14 +6,15 @@ import java.util.UUID;
 
 import org.jetbrains.annotations.NotNull;
 
+import io.github.viimeinen1.ainventory.Common.DataValue;
 import io.github.viimeinen1.ainventory.Inventory.AbstractInventory;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.INVENTORY_SIZE;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.inventoryCloseFunction;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.inventoryFunction;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.inventoryOpenFunction;
+import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.inventoryRequirementFunction;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.itemClickFunction;
-import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.requirementFunction;
 import io.github.viimeinen1.ainventory.ItemBuilder.AbstractItemBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -27,11 +28,11 @@ public abstract class AbstractInventoryBuilder <
 
     public UUID owner;
     public inventoryFunction<A, C> initialization;
-    public Map<Integer, inventoryFunction<A, C>> pages = new HashMap<>();
+    public Map<String, DataValue> values = new HashMap<>();
     public itemClickFunction defaultClickAction;
     public INVENTORY_SIZE size = INVENTORY_SIZE.CHEST_9x3;
     public Component title;
-    public requirementFunction requirementFunction;
+    public inventoryRequirementFunction requirementFunction;
     public inventoryOpenFunction openFunction;
     public inventoryCloseFunction closeFunction;
     public boolean disableDrag = true;
@@ -54,19 +55,17 @@ public abstract class AbstractInventoryBuilder <
     }
 
     /**
-     * Create page for the inventory.
+     * Create new value to the inventory.
+     * Values can be used to make pages.
      * 
-     * Pages are loaded after initialization, so you can modify items set in initialization.
+     * Minimum value is 0.
      * 
-     * You can call {@link AbstractInventoryView#nextPage(org.bukkit.entity.HumanEntity)} and {@link AbstractInventoryView#prevPage(org.bukkit.entity.HumanEntity)}
-     * as long as the pages are next to each other (no skipping pages, use {@link AbstractInventoryView#page(Integer, org.bukkit.entity.HumanEntity)} if you want to jump on page number.)
-     * 
-     * @param page page number
-     * @param fn {@link inventoryFunction}
+     * @param key key.
+     * @param max maxumum value (inclusive).
      * @return builder
      */
-    public E page(Integer page, inventoryFunction<A, C> fn) {
-        this.pages.put(page, fn);
+    public E value(String key, int max) {
+        this.values.put(key, new DataValue(max));
         return getThis();
     }
 
@@ -160,7 +159,7 @@ public abstract class AbstractInventoryBuilder <
      * @param fn {@link requirementFunction}
      * @return builder
      */
-    public E require(requirementFunction fn) {
+    public E require(inventoryRequirementFunction fn) {
         this.requirementFunction = fn;
         return getThis();
     }

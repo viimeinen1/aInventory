@@ -32,7 +32,7 @@ public abstract class AbstractUniqueInventory <K extends AbstractUniqueInventory
             builder.requirementFunction,
             builder.defaultClickAction,
             builder.owner,
-            builder.pages,
+            builder.values,
             builder.disableDrag
         );
     }
@@ -65,7 +65,7 @@ public abstract class AbstractUniqueInventory <K extends AbstractUniqueInventory
                 createView()
             );
         }
-        views.get(player.getUniqueId()).page(views.get(player.getUniqueId()).page(), player);
+        views.get(player.getUniqueId()).initialize(player);
     }
 
     @Override

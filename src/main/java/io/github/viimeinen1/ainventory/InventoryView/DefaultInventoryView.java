@@ -10,7 +10,8 @@ import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import io.github.viimeinen1.ainventory.Common.PagedSlotMap;
+import io.github.viimeinen1.ainventory.Common.DataValue;
+import io.github.viimeinen1.ainventory.Common.ValuedSlotMap;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.valuedItemFunction.ValuedItemBuilder;
 import io.github.viimeinen1.ainventory.ItemBuilder.DefaultItemBuilder;
 import net.kyori.adventure.text.Component;
@@ -44,10 +45,10 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
         @Nullable inventoryFunction<DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView> initFn,
         @Nullable inventoryOpenFunction openFn,
         @Nullable inventoryCloseFunction closeFn,
-        @Nullable requirementFunction requirementFn,
+        @Nullable inventoryRequirementFunction requirementFn,
         @Nullable itemClickFunction defaultClickFn,
         @Nullable UUID owner,
-        @Nullable Map<Integer, inventoryFunction<DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView>> pageInits,
+        @Nullable Map<String, DataValue> values,
         @NotNull boolean disableDrag
     ) {
         super(
@@ -59,18 +60,15 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
             requirementFn,
             defaultClickFn,
             owner,
-            pageInits,
+            values,
             disableDrag
         );
     }
 
     @Override
-    protected void initPage(Integer page, @Nullable HumanEntity player) {
+    protected void initView(@NotNull Map<String, DataValue> data, @Nullable HumanEntity player) {
         clear();
         initFn.ifPresent(fn -> fn.run(this, Optional.ofNullable(player)));
-        if (pageInits.containsKey(page) && pageInits.get(page) != null) {
-            pageInits.get(page).run(this, Optional.ofNullable(player));
-        }
         update();
     }
 
@@ -88,11 +86,11 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
     }
 
     @Override
-    public <T> void PagedItemList(Collection<Integer> slots, Collection<T> values, @Nullable HumanEntity player, valuedItemFunction<T, DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView> fn) {
-        int page = this.page();
-        PagedSlotMap<T> map = new PagedSlotMap<>(slots, values);
+    public <T> void ValuedItemList(Collection<Integer> slots, Collection<T> values, String key, @Nullable HumanEntity player, valuedItemFunction<T, DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView> fn) {
+        int value = this.value(key);
+        ValuedSlotMap<T> map = new ValuedSlotMap<>(slots, values);
         map.values.entrySet().forEach(entry -> {
-            if (entry.getKey().page() != page) {
+            if (entry.getKey().value() != value) {
                 return;
             }
 
