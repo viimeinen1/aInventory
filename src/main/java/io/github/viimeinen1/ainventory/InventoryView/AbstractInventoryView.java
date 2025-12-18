@@ -306,6 +306,18 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
     }
 
     /**
+     * Get maximum value of key.
+     * 
+     * Defaults to 0.
+     * 
+     * @param key key of maximum value.
+     * @return maximum value.
+     */
+    public int maxValue(String key) {
+        return this.data.containsKey(key) ? this.data.get(key).max : 0;
+    }
+
+    /**
      * Set value associated with key. 
      * If key does not exist, or value is too small or too big, value will not be changed.
      * 
