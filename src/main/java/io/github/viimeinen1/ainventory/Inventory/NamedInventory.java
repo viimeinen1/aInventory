@@ -1,6 +1,7 @@
 package io.github.viimeinen1.ainventory.Inventory;
 
 import io.github.viimeinen1.ainventory.Common.Named;
+import io.github.viimeinen1.ainventory.GUI.AbstractGUI;
 import io.github.viimeinen1.ainventory.InventoryBuilder.NamedInventoryBuilder;
 import io.github.viimeinen1.ainventory.InventoryView.DefaultInventoryView;
 import io.github.viimeinen1.ainventory.ItemBuilder.DefaultItemBuilder;
@@ -8,10 +9,13 @@ import io.github.viimeinen1.ainventory.ItemBuilder.DefaultItemBuilder;
 /**
  * Inventory that has 'name' for identifying.
  */
-public final class NamedInventory <T extends Enum<T>> extends AbstractInventory<DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView, NamedInventoryBuilder<T>, NamedInventory<T>> implements Named<T> {
+public final class NamedInventory <T extends Enum<T>, K extends AbstractGUI<T, ?, ?, ?, ?>> extends AbstractInventory<DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView, NamedInventoryBuilder<T, K>, NamedInventory<T, K>> implements Named<T, K> {
 
     private final T name;
-    public T name() {return name;}
+    private final K provider;
+
+    @Override public T name() {return name;}
+    @Override public K provider() {return provider;}
 
     /**
      * Create new {@link AbstractInventory}.
@@ -20,9 +24,10 @@ public final class NamedInventory <T extends Enum<T>> extends AbstractInventory<
      * 
      * @param builder extends {@link AbstractInventory.Builder}
      */
-    public NamedInventory(NamedInventoryBuilder<T> builder) {
+    public NamedInventory(NamedInventoryBuilder<T, K> builder) {
         super(builder);
         this.name = builder.name();
+        this.provider = builder.provider();
     }
 
     @Override
@@ -42,10 +47,10 @@ public final class NamedInventory <T extends Enum<T>> extends AbstractInventory<
     }
 
     @Override
-    public NamedInventory<T> getThis() {return this;}
+    public NamedInventory<T, K> getThis() {return this;}
 
-    public static <T extends Enum<T>> NamedInventoryBuilder<T> builder(T name) {
-        return new NamedInventoryBuilder<T>(name);
+    public static <T extends Enum<T>, K extends AbstractGUI<T,?,?,?,?>> NamedInventoryBuilder<T, K> builder(T name, K provider) {
+        return new NamedInventoryBuilder<T, K>(name, provider);
     }
 
     // /**

@@ -20,12 +20,12 @@ public abstract class AbstractGUI <
         T extends Enum<T>, 
         A extends AbstractItemBuilder<A, C>, 
         C extends AbstractInventoryView<A, C>, 
-        E extends AbstractInventoryBuilder<A, C, E, F> & Named<T>, 
-        F extends AbstractInventory<A, C, E, F> & Named<T>
+        E extends AbstractInventoryBuilder<A, C, E, F> & Named<T, ?>, 
+        F extends AbstractInventory<A, C, E, F> & Named<T, ?>
     > {
 
     @FunctionalInterface
-    public static interface GUIInventoryGetter <T extends Enum<T>, A extends AbstractItemBuilder<A, C>, C extends AbstractInventoryView<A, C>, E extends AbstractInventoryBuilder<A, C, E, F> & Named<T>, F extends AbstractInventory<A, C, E, F> & Named<T>> {
+    public static interface GUIInventoryGetter <T extends Enum<T>, A extends AbstractItemBuilder<A, C>, C extends AbstractInventoryView<A, C>, E extends AbstractInventoryBuilder<A, C, E, F> & Named<T, ?>, F extends AbstractInventory<A, C, E, F> & Named<T, ?>> {
         public F build(E builder);
     }
 
@@ -43,13 +43,25 @@ public abstract class AbstractGUI <
     }
 
     /**
-     * Add inventory to the gui.
+     * Create inventory to the gui.
      * 
      * @param inventory {@link NamedInventory}
+     * @param fn {@link GUIInventoryGetter} getter for inventory
      * @return the inventory that was added.
      */
-    public @NotNull F put(@NotNull T name, @NotNull GUIInventoryGetter<T, A, C, E, F> fn) {
+    public @NotNull F create(@NotNull T name, @NotNull GUIInventoryGetter<T, A, C, E, F> fn) {
         F inventory = fn.build(builder(name));
+        inventories.put(inventory.name(), inventory);
+        return inventory;
+    }
+
+    /**
+     * Put inventory into the gui.
+     * 
+     * @param inventory inventory
+     * @return inventory that was put into the gui.
+     */
+    public @NotNull F put(F inventory) {
         inventories.put(inventory.name(), inventory);
         return inventory;
     }

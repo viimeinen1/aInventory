@@ -191,7 +191,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
             this.inventory = Bukkit.createInventory(this, size.size);
         }
 
-        this.initFn = Optional.of(initFn);
+        this.initFn = Optional.ofNullable(initFn);
         this.openFn = Optional.ofNullable(openFn);
         this.closeFn = Optional.ofNullable(closeFn);
         this.requirementFn = Optional.ofNullable(requirementFn);

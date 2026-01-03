@@ -1,23 +1,28 @@
 package io.github.viimeinen1.ainventory.Inventory;
 
 import io.github.viimeinen1.ainventory.Common.Named;
+import io.github.viimeinen1.ainventory.GUI.AbstractGUI;
 import io.github.viimeinen1.ainventory.InventoryBuilder.NamedUniqueInventoryBuilder;
 
-public final class NamedUniqueInventory <T extends Enum<T>> extends AbstractUniqueInventory<NamedUniqueInventoryBuilder<T>, NamedUniqueInventory<T>> implements Named<T> {
+public final class NamedUniqueInventory <T extends Enum<T>, K extends AbstractGUI<T,?,?,?,?>> extends AbstractUniqueInventory<NamedUniqueInventoryBuilder<T, K>, NamedUniqueInventory<T, K>> implements Named<T, K> {
     
     private final T name;
-    public T name() {return name;}
+    private final K provider;
 
-    public NamedUniqueInventory(NamedUniqueInventoryBuilder<T> builder) {
+    @Override public T name() {return name;}
+    @Override public K provider() {return provider;}
+
+    public NamedUniqueInventory(NamedUniqueInventoryBuilder<T, K> builder) {
         super(builder);
         this.name = builder.name();
+        this.provider = builder.provider();
     }
 
     @Override
-    public NamedUniqueInventory<T> getThis() {return this;}
+    public NamedUniqueInventory<T, K> getThis() {return this;}
 
-    public static <T extends Enum<T>> NamedUniqueInventoryBuilder<T> builder(T name) {
-        return new NamedUniqueInventoryBuilder<T>(name);
+    public static <T extends Enum<T>, K extends AbstractGUI<T,?,?,?,?>> NamedUniqueInventoryBuilder<T, K> builder(T name, K provider) {
+        return new NamedUniqueInventoryBuilder<T,K>(name,provider);
     }
 
 }

@@ -10,7 +10,7 @@ import io.github.viimeinen1.ainventory.ItemBuilder.DefaultItemBuilder;
 /**
  * a GUI that stores multiple inventories.
  */
-public class GUI <T extends Enum<T>> extends AbstractGUI<T, DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView, NamedInventoryBuilder<T>, NamedInventory<T>> {
+public class GUI <T extends Enum<T>> extends AbstractGUI<T, DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView, NamedInventoryBuilder<T, GUI<T>>, NamedInventory<T, GUI<T>>> {
 
     /**
      * create new GUI.
@@ -25,6 +25,6 @@ public class GUI <T extends Enum<T>> extends AbstractGUI<T, DefaultItemBuilder<D
      * Inventory builder.
      */
     @Override
-    public NamedInventoryBuilder<T> builder(T name) {return new NamedInventoryBuilder<T>(name);}
+    public NamedInventoryBuilder<T, GUI<T>> builder(T name) {return new NamedInventoryBuilder<T, GUI<T>>(name, this);}
 
 }
