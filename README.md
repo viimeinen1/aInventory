@@ -14,7 +14,7 @@ The dependency can be seen at https://central.sonatype.com/artifact/io.github.vi
 build.gradle.kts
 ```kotlin
 dependencies (
-    implementation("io.github.viimeinen1.ainventory:aInventory:2.3.0-pre1")
+    implementation("io.github.viimeinen1.ainventory:aInventory:2.3.0")
 )
 ```
 
