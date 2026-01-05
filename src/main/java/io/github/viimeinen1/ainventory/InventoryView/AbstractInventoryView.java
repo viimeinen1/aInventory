@@ -1,13 +1,6 @@
 package io.github.viimeinen1.ainventory.InventoryView;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.HumanEntity;
@@ -42,7 +35,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
      * click function
      */
     @FunctionalInterface
-    public static interface itemClickFunction {
+    public interface itemClickFunction {
         void run(InventoryClickEvent event);
     }
 
@@ -50,7 +43,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
      * Inventory use requirement function
      */
     @FunctionalInterface
-    public static interface inventoryRequirementFunction {
+    public interface inventoryRequirementFunction {
         boolean run(HumanEntity player);
     }
 
@@ -58,7 +51,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
      * Inventory open function
      */
     @FunctionalInterface
-    public static interface inventoryOpenFunction {
+    public interface inventoryOpenFunction {
         void run(InventoryOpenEvent event);
     }
 
@@ -66,7 +59,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
      * Inventory close function
      */
     @FunctionalInterface
-    public static interface inventoryCloseFunction {
+    public interface inventoryCloseFunction {
         void run(InventoryCloseEvent event);
     }
 
@@ -74,46 +67,43 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
      * Single item reload function
      */
     @FunctionalInterface
-    public static interface itemReloadFunction <A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>> {
+    public interface itemReloadFunction <A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>> {
         void run(A builder, Optional<HumanEntity> player);
     }
 
     @FunctionalInterface
-    public static interface valuedItemFunction <T, A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>> {
+    public interface valuedItemFunction <T, A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>> {
         void run(ValuedItemBuilder<T, A, B> builder);
 
-        public static class ValuedItemBuilder <T, A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>> {
-            public final T value;
-            public final A builder;
-            public final int slot;
-            public final Optional<HumanEntity> player;
-
-            public ValuedItemBuilder(T value, A builder, int slot, Optional<HumanEntity> player) {
-                this.value = value;
-                this.builder = builder;
-                this.slot = slot;
-                this.player = player;
-            }
-        }
+        record ValuedItemBuilder<
+            T,
+            A extends AbstractItemBuilder<A, B>,
+            B extends ItemBuildable<A, B>
+        > (
+            T value,
+            A builder,
+            int slot,
+            Optional<HumanEntity> player
+        ) { }
     }
 
     @FunctionalInterface
-    public static interface itemRequirementFunction {
-        public boolean run(ItemStack item);
+    public interface itemRequirementFunction {
+        boolean run(ItemStack item);
     }
 
     /**
      * Generic inventory function.
      */
     @FunctionalInterface
-    public static interface inventoryFunction <A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>> {
+    public interface inventoryFunction <A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>> {
         void run(B aInventory, Optional<HumanEntity> player);
     }
 
     /**
      * Possible inventory sizes
      */
-    public static enum INVENTORY_SIZE {
+    public enum INVENTORY_SIZE {
         CHEST_9x1(9),
         CHEST_9x2(18),
         CHEST_9x3(27),
@@ -122,7 +112,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         CHEST_9x6(54);
 
         private final int size;
-        private INVENTORY_SIZE(int size) {
+        INVENTORY_SIZE(int size) {
             this.size = size;
         }
         public int size() {return this.size;}
@@ -131,15 +121,13 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
     /**
      * Messages of inventory.
      */
-    public final class Messages {
+    public static final class Messages {
         public static final Component NO_OPEN_PERMISSION = MiniMessage.miniMessage().deserialize("<red>You don't have permission to open this inventory!");
         public static final Component NO_USE_PERMISSION = MiniMessage.miniMessage().deserialize("<red>You don't have permission to use this inventory!");
     }
 
     protected final Inventory inventory;
     public final Optional<inventoryFunction<A, C>> initFn;
-    // protected final Map<Integer, itemClickFunction> clickFns = new HashMap<>();
-    // protected final Map<Integer, itemReloadFunction<A, C>> itemReloads = new HashMap<>();
     protected final Map<Integer, ItemData<A, C>> itemData = new HashMap<>();
     public final Optional<itemClickFunction> defaultClickFn;
     public final Optional<inventoryRequirementFunction> requirementFn;
@@ -151,11 +139,12 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
     private final Map<String, DataValue> data = new HashMap<>();
 
     @Override
+    @Internal
     public Map<Integer, ItemData<A, C>> itemData() {return itemData;}
 
-    abstract A ItemBuilder(Integer slot);
-    abstract A ItemBuilder(Collection<Integer> slots);
-    abstract <T> void ValuedItemList(Collection<Integer> slots, Collection<T> values, String key, @Nullable HumanEntity player, valuedItemFunction<T, A, C> fn);
+    public abstract A ItemBuilder(Integer slot);
+    public abstract A ItemBuilder(Collection<Integer> slots);
+    public abstract <T> void ValuedItemList(Collection<Integer> slots, Collection<T> values, String key, @Nullable HumanEntity player, valuedItemFunction<T, A, C> fn);
     protected abstract void initView(@NotNull Map<String, DataValue> data, @Nullable HumanEntity player);
 
     /**
@@ -163,16 +152,17 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
      * 
      * All parameters are final, if change is required, create new view.
      * 
-     * @param size
-     * @param title
-     * @param openFn
-     * @param closeFn
-     * @param requirementFn
-     * @param defaultClickFn
-     * @param owner
-     * @param values
-     * @param disableDrag
+     * @param size size of inventory
+     * @param title title of inventory
+     * @param openFn function called on open
+     * @param closeFn function called on close
+     * @param requirementFn function checking requirements
+     * @param defaultClickFn function called every time
+     * @param owner owner of inventory
+     * @param values values (pages)
+     * @param disableDrag if drag should be disabled
      */
+    @Internal
     public AbstractInventoryView(
         @NotNull INVENTORY_SIZE size,
         @Nullable Component title,
@@ -183,7 +173,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         @Nullable itemClickFunction defaultClickFn,
         @Nullable UUID owner,
         @Nullable Map<String, DataValue> values,
-        @NotNull boolean disableDrag
+        boolean disableDrag
     ) {
 
         if (title != null) {
@@ -201,9 +191,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         this.disableDrag = disableDrag;
 
         if (values != null) {
-            values.entrySet().forEach(entry -> {
-                this.createValue(entry.getKey(), entry.getValue());
-            });
+            values.forEach(this::createValue);
         }
     }
 
@@ -221,16 +209,26 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
     }
 
     public void reload() {
-        itemData.forEach((slot, dt) -> {
-            dt.reloadFn.ifPresent(fn -> fn.run(ItemBuilder(slot), Optional.empty()));
-        });
+        itemData.forEach((slot, dt) ->
+            dt.reloadFn().ifPresent(fn ->
+                fn.run(
+                    ItemBuilder(slot),
+                    Optional.empty()
+                )
+            )
+        );
         update();
     }
 
     public void reload(@Nullable HumanEntity player) {
-        itemData.forEach((slot, dt) -> {
-            dt.reloadFn.ifPresent(fn -> fn.run(ItemBuilder(slot), Optional.ofNullable(player)));
-        });
+        itemData.forEach((slot, dt) ->
+            dt.reloadFn().ifPresent(fn ->
+                fn.run(
+                    ItemBuilder(slot),
+                    Optional.ofNullable(player)
+                )
+            )
+        );
         update();
     }
 
@@ -243,7 +241,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
             if (!itemData.containsKey(slot)) {
                 continue;
             }
-            itemData.get(slot).reloadFn.ifPresent(fn -> fn.run(ItemBuilder(slot), Optional.ofNullable(player)));
+            itemData.get(slot).reloadFn().ifPresent(fn -> fn.run(ItemBuilder(slot), Optional.ofNullable(player)));
         }
         update();
     }
@@ -323,11 +321,11 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
      * Set value associated with key. 
      * If key does not exist, or value is too small or too big, value will not be changed.
      * 
-     * View will be initialized if value was set succesfully.
+     * View will be initialized if value was set successfully.
      * 
-     * @param key
-     * @param value
-     * @param player
+     * @param key key of value
+     * @param value value to set
+     * @param player player if one is present
      */
     public void value(String key, Integer value, @Nullable HumanEntity player) {
         if (!this.data.containsKey(key)) {return;}
@@ -390,21 +388,18 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
 
         if (itemData.containsKey(event.getSlot())) {
 
-            if (itemData.get(event.getSlot()).requirementFn.isPresent()) {
-
-                if (
-                    !event.getCursor().isEmpty() && 
-                    !itemData.get(event.getSlot()).requirementFn.get().run(event.getCursor()) 
-                ) {
-                    event.setCancelled(true);
-                    return;
-                }
+            var reqFn = itemData.get(event.getSlot()).requirementFn();
+            if (
+                !event.getCursor().isEmpty() &&
+                reqFn.isPresent() &&
+                reqFn.get().run(event.getCursor())
+            ) {
+                event.setCancelled(true);
+                return;
             }
 
-            switch (itemData.get(event.getSlot()).slotType) {
-                case BUTTON, BORDER -> {
-                    event.setCancelled(true);
-                }
+            switch (itemData.get(event.getSlot()).slotType()) {
+                case BUTTON, BORDER -> event.setCancelled(true);
                 case RESULT -> {
                     if (PLACE_ACTIONS.contains(event.getAction())) {
                         event.setCancelled(true);
@@ -415,7 +410,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
             }
 
             defaultClickFn.ifPresent(fn -> fn.run(event));
-            itemData.get(event.getSlot()).clickFn.ifPresent(fn -> fn.run(event));
+            itemData.get(event.getSlot()).clickFn().ifPresent(fn -> fn.run(event));
             return;
         }
 
@@ -444,43 +439,39 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         List<ItemStack> containerItems = new ArrayList<>();
 
         // for some reason container is empty
-        if (contents == null || item == null) {return;}
+        if (item == null) {return;}
 
         for (ItemStack c : contents) {
-            if (c == null) {
-                containerItems.add(ItemStack.empty());
-            } else {
-                containerItems.add(c);
-            }
+            containerItems.add(Objects.requireNonNullElseGet(c, ItemStack::empty));
         }
 
         var containerSlots = IndexStream.toStream(containerItems)
-            .filter(val -> 
-                itemData.containsKey(val.i) &&
-                ( 
-                    itemData.get(val.i).slotType.equals(ItemSlotType.CONTAINER) ||
-                    itemData.get(val.i).slotType.equals(ItemSlotType.CRAFTING)
+            .filter(val -> {
+                var reqFn = itemData.get(val.i()).requirementFn();
+                return itemData.containsKey(val.i()) &&
+                (
+                    itemData.get(val.i()).slotType().equals(ItemSlotType.CONTAINER) ||
+                    itemData.get(val.i()).slotType().equals(ItemSlotType.CRAFTING)
                 ) &&
                 (
-                    itemData.get(val.i).requirementFn.isEmpty() ||
-                    itemData.get(val.i).requirementFn.get().run(item) 
-                )
-            )
-            .toList();
+                    reqFn.isEmpty() ||
+                    reqFn.get().run(item)
+                );
+            }).toList();
 
         // partial slots
         applicableSlots.addAll(containerSlots.stream()
             .filter(val -> 
-                val.value.isSimilar(item) &&
-                val.value.getAmount() < val.value.getMaxStackSize()
+                val.value().isSimilar(item) &&
+                val.value().getAmount() < val.value().getMaxStackSize()
             )
-            .map(val -> val.i)
+            .map(IndexStream.StreamValue::i)
             .toList());
 
         // empty slots
         applicableSlots.addAll(containerSlots.stream()
-            .filter(val -> val.value.isEmpty())
-            .map(val -> val.i)
+            .filter(val -> val.value().isEmpty())
+            .map(IndexStream.StreamValue::i)
             .toList());
 
         // move items
@@ -489,15 +480,15 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
             if (remain <= 0) {break;}
 
             ItemStack curr = inventory.getItem(slot);
+            int addition;
             if (curr == null) {
-                int addition = Math.min(inventory.getMaxStackSize(), remain);
+                addition = Math.min(inventory.getMaxStackSize(), remain);
                 inventory.setItem(slot, item.asQuantity(addition));
-                remain -= addition;
             } else {
-                int addition = Math.min(curr.getMaxStackSize() - curr.getAmount(), remain);
+                addition = Math.min(curr.getMaxStackSize() - curr.getAmount(), remain);
                 curr.add(addition);
-                remain -= addition;
             }
+            remain -= addition;
         }
 
         // remove item
@@ -524,7 +515,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
     }
 
     @Internal
-    public void onInvenoryDoubleClick(@NotNull InventoryClickEvent event) {
+    public void onInventoryDoubleClick(@NotNull InventoryClickEvent event) {
         if (requirementFn.isPresent() && !requirementFn.get().run(event.getWhoClicked())) {
             event.setCancelled(true);
             event.getWhoClicked().sendMessage(Messages.NO_USE_PERMISSION);
@@ -551,33 +542,28 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         // remove crafting slots
         ItemStack[] contents = event.getInventory().getContents();
 
-        if (contents == null) {return;}
-
         List<ItemStack> containerItems = new ArrayList<>();
         for (ItemStack c : contents) {
-            if (c == null) {
-                containerItems.add(ItemStack.empty());
-            } else {
-                containerItems.add(c);
-            }
+            containerItems.add(Objects.requireNonNullElseGet(c, ItemStack::empty));
         }
 
         IndexStream.toStream(containerItems)
-            .filter(val -> 
-                itemData.containsKey(val.i) &&
+            .filter(val -> {
+                var reqFn = itemData.get(val.i()).requirementFn();
+                return itemData.containsKey(val.i()) &&
                 (
-                    itemData.get(val.i).slotType.equals(ItemSlotType.CRAFTING) ||
-                    itemData.get(val.i).slotType.equals(ItemSlotType.RESULT)
+                    itemData.get(val.i()).slotType().equals(ItemSlotType.CRAFTING) ||
+                    itemData.get(val.i()).slotType().equals(ItemSlotType.RESULT)
                 ) &&
                 (
-                    itemData.get(val.i).requirementFn.isEmpty() ||
-                    itemData.get(val.i).requirementFn.get().run(val.value) 
-                )
-            )
+                    reqFn.isEmpty() ||
+                    reqFn.get().run(val.value())
+                );
+            })
             .forEach(val -> {
-                event.getPlayer().getInventory().addItem(val.value)
+                event.getPlayer().getInventory().addItem(val.value())
                     .values().forEach(item -> event.getPlayer().dropItem(item));
-                event.getInventory().clear(val.i);
+                event.getInventory().clear(val.i());
             });
 
         closeFn.ifPresent(fn -> fn.run(event));

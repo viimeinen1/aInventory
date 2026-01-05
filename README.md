@@ -12,172 +12,293 @@ To use the library in your project, add it as a dependency.
 The dependency can be seen at https://central.sonatype.com/artifact/io.github.viimeinen1.ainventory/aInventory
 
 build.gradle.kts
-```java
+```kotlin
 dependencies (
-    implementation("io.github.viimeinen1.ainventory:aInventory:1.2.0")
+    implementation("io.github.viimeinen1.ainventory:aInventory:2.3.0-pre1")
 )
 ```
 
 ## Usage
 
-Creating single inventory
-```java
+<details>
+<summary>Creating basic inventory</summary>
 
+```java
 /*
- * Basic usage
- * 
- * Code is only showing possible usage of all methods; the code will not work if copied.
+ * Basic usage showing all methods in builders
 */
 
-int counter = 0;
+DefaultInventory inventory = DefaultInventory.builder()
+    .size(INVENTORY_SIZE.CHEST_9x3)
+    .title("<gold>Title")
+    .require(pl -> pl.isOp() || pl.hasPermission("example.admin"))
+    // .owner(player.getUniqueId()) // works similarly to .require()
+    .defaultAction(event -> event.getWhoClicked().sendMessage("You clicked inventory!"))
+    .openFunction(event -> event.getPlayer().sendMessage("You opened inventory!"))
+    .closeFunction(event -> event.getPlayer().sendMessage("You closed inventory!"))
+    .disableDrag(true) // disabled by default, can cause issues with ItemSlotTypes
 
-aInventory ainventory = aInventory.builder() // create new builder
-    .size(INVENTORY_SIZE.CHEST_9x1) // set inventory size to 9x1
-    .title("<gold>Example inventory") // set inventory title (also accepts components)
-    .require(player -> player.isOp() || player.hasPermission("example.admin")) // require player to be OP or have permission "example.admin" to open or use inventory.
-    .defaultAction(event -> event.setCancelled(true)) // cancel action every time inventory is clicked (or something is moved to it)
-    .openFunction((event, inv) -> counter++) // add 1 to counter every time inventory is opened
-    .closeFunction((event, inv) -> Bukkit.getScheduler().runTask(plugin, () -> inv.openInventory(event.getPlayer()))) // reopen inventory if it's closed. Forces player to close it using the quit item.
-    .initialization(inventory -> { // create initialization function
+    // init function of inventory
+    .initialization((view, player) -> {
 
-        // Quit item
-        inventory.ItemBuilder(0) // create new ItemBuilder to slot 0
-            .material(Material.IRON_DOOR) // set material of item
-            .amount(30) //set item amount
-            .name("<red>QUIT", false) // set name to QUIT (with no italics)
-            .lore(List.of( // add lore
-                "",
-                "<red>Close inventory",
-                ""
-            ), false) // no italics
-            .setData( // enchant with mending 3
-                DataComponentTypes.ENCHANTMENTS, 
-                ItemEnchantments.itemEnchantments(Map.of(Enchantment.MENDING, 3))
-            )
-            .setData( // hide enchants from tooltip
-                DataComponentTypes.TOOLTIP_DISPLAY, 
-                TooltipDisplay.tooltipDisplay().addHiddenComponents(DataComponentTypes.ENCHANTMENTS).build()
-            )
-            .function(event -> { // create function that gets run when item is clicked
-                // no need to cancel event, because it was done in defaultActions
-                Bukkit.getScheduler().runTask(plugin, () -> event.getWhoClicked().closeInventory()); // close player's inventory on next tick
-            })
-            .build(); // add built item(s) to inventory
-
-        // Counter
-        inventory.ItemBuilder(1) // create itembuilder for slot 1
-            .material(Material.GREEN_CONCRETE)
+        // add items here with ItemBuilder
+        view.ItemBuilder(0)
+            .material(Material.IRON_DOOR)
+            .amount(1) // default is 1
+            .name("<red>Close", false)
+            .slotType(AbstractItemBuilder.ItemSlotType.BUTTON) // handles blocking taking item
             .lore(List.of(
                 "",
-                Component.text("click here to increase count"),
-                ""
+                "<red>Close inventory", // minimessage format
+                Component.empty() // accepts components as well (you can mix them)
             ), false)
-            .function(event -> {
-                counter++; // add 1 to counter
-                inventory.reload(1); // reload this item. Will also update inventory for it's viewers.
-            })
-            .reload(builder -> { // specify reload function
-                // instead of setting name before, we specify it in reload function
-                // that way the name gets reloaded every time inventory is opened, or when the slot is reloaded manually
-                builder.name("Counter: " + count, false) // set name
-                    .build(); // apply changes
-            })
-            .build(); // apply item to inventory
+            .function(event -> Bukkit.getScheduler().runTask(plugin, () -> event.getWhoClicked().closeInventory()))
+            .build(); // apply item to view
 
-        // Items that gets removed on click
-        inventory.ItemBuilder(List.of(2, 3, 4, 5, 6, 7)) // specify multiple places for item
-            .addSlot(8) // add more items
-            .name("<yellow>Click to remove")
-            .function(event -> {
-                inventory.ItemBuilder(event.getSlot()) // create new ItemBuilder for this slot
-                    //.removeReloadFunction(true) // this would remove reload funtion
-                    //.removeSlotFuntion(true) // this would remove click function
-                    .clear() // clear the item. Will also clear reload and click functions
-                    .build(); // apply changes to the inventory
+        ItemStack borderItem = ItemStack.of(Material.GRAY_STAINED_GLASS_PANE).asQuantity(2);
 
-                inventory.update(); // update inventory for it's viewers to show changes
-            })
+        view.ItemBuilder(List.of(1,2,3)) // set multiple slots
+            .addSlot(4) // add even more slots
+            .setItem(borderItem) // setting item
+            .setData(
+                DataComponentTypes.TOOLTIP_DISPLAY,
+                TooltipDisplay.tooltipDisplay().hideTooltip(true).build()
+            )
+            .slotType(AbstractItemBuilder.ItemSlotType.BORDER) // prevent any modification
+            .build();
     })
-    .build(); // create the inventory
-
-// using inventory
-ainventory.openInventory(player); // open inventory for player (will also reload inventory)
-
-ainventory.reload() // reload inventory manually
-
-ainventory.initialize() // run initialization function again (where we set the items)
-
-
-// alternatively we can create items while not in initialization function, 
-// but these can't be recreated when .initialize() is called
-ainventory.ItemBuilder(0) // will make a copy of the item in slot 0
-    .clear() // clear required since we already have item in the slot
-    .material(Material.RED_CONCRETE)
-    .build(); // apply changes
-
-// aInventory also exposes the following values for more robust modification:
-ainventory.inventory // -> [Inventory] get the underlying inventory for modification
-ainventory.clickFunctions // -> [Map<Integer, itemClickEvent>] map of click functions
-ainventory.reloadFunctions // -> Map<Integer, itemReloadFunction>] map of reload functions
-```
-
-Creating GUIs
-```java
-
-// basic aGUI usage
-
-public enum GUI_INVENTORY { // all gui inventories
-    MAIN,
-    CONFIRM_EXIT
-    // etc
-}
-
-aGUI<GUI_INVENTORY> agui = new aGUI<>(GUI_INVENTORY.class); // create new gui
-
-agui.putInventory(aGUIInventory.builder(GUI_INVENTORY.MAIN) // define MAIN inventory to the gui
-    .size(INVENTORY_SIZE.CHEST_9x3)
-    .initialization(inventory -> {
-        // initialization of items here
-    })
-    .build()); // create inventory
-
-
-// another way of defining inventories
-aGUIInventory confirmExitInventory = aGUIInventory.builder(GUI_INVENTORY.CONFIRM_EXIT) // create CONFIRM_EXIT inventory
-    // other inventory settings
     .build();
 
-agui.putInventory(confirmExitInventory); // put inventory to gui
+/*
+    To make the inventory unique to everyone, use
+ */
+UniqueInventory inventory = UniqueInventory.builder()
+    // inventory setup
+    .build();
 
-// now that we have both inventories, we can start using the gui
-agui.openInventory(GUI_INVENTORY.MAIN, player); // open inventory for player
-agui.reloadInventory(GUI_INVENTORY.MAIN); // reload inventory
-agio.initializeInventory(GUI_INVENTORY.CONFIRM_EXIT); // re-run initialization logic
+// Open inventory to players with
+inventory.open(player);
 
+// initialize again with
+inventory.initialize(null);
 
-// to open other gui inventories from inside the gui, do it in functions for items
-
-// ...
-.function(event -> Bukkit.getScheduler().runTask(plugin, () -> gui.openInventory(GUI_INENTORY.CONFIRM_EXIT, event.getWhoClicked())))
-// ...
 ```
 
-IndexStream
+</details>
+
+<details>
+<summary>GUIs</summary>
+
 ```java
 /*
- * IndexStream was created for more ease of use in adding collections to inventories.
-*/
+    Basic GUIs
+ */
 
+// inventories of gui
+enum INVENTORY {
+    MAIN,
+    QUIT
+}
+
+// create gui
+var gui = new GUI<>(INVENTORY.class);
+
+// add inventories to gui
+gui.builder(INVENTORY.MAIN)
+    // inventory setup
+    .build();
+
+gui.builder(INVENTORY.QUIT)
+    .build();
+
+/*
+    Unique GUI works the same, but the inventories are not shared.
+ */
+
+var uniqueGUI = new UniqueGUI<>(INVENTORY.class);
+
+```
+
+</details>
+
+</details>
+
+<details>
+<summary>Reloading</summary>
+
+Basic reload usage
+
+Instead of recreating the whole view again with `.initialize()`,
+we can reload the inventory, and specify what we want to reload.
+
+Inventory is reloaded every time someone opens the inventory.
+```java
+// let's say we have value
+Integer counter = 0;
+
+// we can display inventory with
+var inv = DefaultInventory.builder()
+    .openFunction(event -> counter++) // add 1 to counter every time inventory is opened
+    .initialization((view, player) -> {
+        view.ItemBuilder(0)
+            .reload((builder, pl) ->
+                builder.name(counter, false).build() // display counter on reload.
+            )
+            .build();
+    })
+    .build();
+```
+now the item name should always display the counter, as the view is reloaded every time someone opens it.
+
+Because only the opened view is reloaded, we need to reload other views as well. This can be done with
+DefaultInventory#reload(null)
+
+</details>
+
+<details>
+<summary>Player specific information</summary>
+
+aInventory supports player specific information with passing player instance when initializing or reloading.
+
+Because player can be set to null on manual reload, player is wrapped into Optional.
+
+```java
+// simple inventory that displays player's name in item name
+var inventory = UniqueInventory.builder()
+    .size(INVENTORY_SIZE.CHEST_9x1)
+    .defaultAction(event -> event.setCancelled(true))
+    .initialization((view, player) -> {
+        player.ifPresent(pl -> {
+            view.ItemBuilder(0)
+                .material(Material.STONE)
+                .name(pl.name(), false)
+                .build();
+        });
+    })
+    .build();
+```
+
+When using player specific information, remember to specify player when manually reloading or initializing
+
+```java
+view.reload(player);
+```
+
+</details>
+
+<details>
+<summary>Slot types</summary>
+
+Slot types are optional, tough they will make life a lot easier when used correctly.
+Slot types were created for containers and crafting GUIs, that require players to place items inside the inventory.
+
+All slots are type CUSTOM as default, and they won't inherit any custom features.
+
+Slot types:
+- CUSTOM: no preset behaviour (default)
+- BUTTON: no taking or placing allowed, only clicking.
+- CONTAINER: everything allowed. Supports shift clicks.
+- CRAFTING: same as container, except items are returned to inventory after view is closed.
+- RESULT: only taking is allowed, contents will be placed to inventory after view is closed.
+- BORDER: everything is disabled (.function() will not run at all)
+
+</details>
+
+<details>
+<summary>Values (Pages)</summary>
+
+aInventory supports multiple page values with value system.
+
+The system works as follows:
+```java
+
+// in setup, create values
+DefaultInventory.builder()
+    // other setup
+
+    // create page values with keys and maximum values
+    // all pages start from 0
+    .value("pageValue1", 2)
+    .value("pageValue2", 10)
+    
+    // you can refer to the values in initialization
+    .initialization((view, player) -> {
+        
+        int value = view.value("pageValue1");
+        
+        // create item that only shows when page is 1
+        if (value < 1) {
+            view.ItemBuilder(0)
+                // item setup
+                .build();
+            
+            // add 1 to value
+            // will initialize view again to rebuild it with the new values.
+            view.next("pageValue2", null);
+        }
+        
+        int value = view.value("does-not-exist"); // will return 0, because value doesn't exist
+    })
+    
+    .build();
+
+```
+
+</details>
+
+<details>
+<summary>IndexStream</summary>
+
+IndexStream was created for more ease of use in adding collections to inventories.
+
+```java
 Collection<? extends Player> players = Bukkit.getOnlinePlayers();
 
-// ...
-
+// inside inventory setup
 IndexStream.toStream(players).limit(9).forEach(entry -> { // create stream with entries [i=index; value=Player]
     inv.ItemBuilder(entry.index) // Create player heads starting from index 0, up to index 8.
-        .material(Material.PLAYER_HEAD) 
+        .material(Material.PLAYER_HEAD)
         .name(entry.value.name(), false)
         .build();
-});
-
-// ...
+    }
+);
 ```
+
+</details>
+
+<details>
+<summary>ValuedItemList</summary>
+
+With ValuedItemList it's possible to display lists of values more easily without a lot of switch cases etc.
+
+The method will create a list that only occupies preset slots, and will fill the slots on multiple views,
+so when value is changed, the list will change as well to next "page".
+
+```java
+
+// example usage of ValuedItemList
+
+// list
+var players = Bukkit.getOnlinePlayers().stream().toList();
+
+DefaultInventory.builder()
+    .size(INVENTORY_SIZE.CHEST_9x3)
+    .value("pageValue1", 2) // creating value
+    .initialization((view, player) -> {
+        view.ValuedItemList(
+            List.of(0,1,2,3,4,5,6,7,8), // what slots
+            players, // value list
+            "pageValue1", // value's key
+            null, // player for reloads and initializations
+            itemBuilder -> { // building the item
+                itemBuilder.builder()
+                    .material(Material.PLAYER_HEAD)
+                    .name(itemBuilder.value().name(), false) // set item's name to player's name
+                .build();
+            }
+        );
+    })
+    .build();
+```
+
+</details>

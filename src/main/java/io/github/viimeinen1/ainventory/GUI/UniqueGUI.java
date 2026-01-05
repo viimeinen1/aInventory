@@ -22,6 +22,6 @@ public final class UniqueGUI <
     }
 
     @Override
-    public NamedUniqueInventoryBuilder<T, UniqueGUI<T>> builder(T name) {return new NamedUniqueInventoryBuilder<>(name, this);};
+    public NamedUniqueInventoryBuilder<T, UniqueGUI<T>> builder(T name) {return new NamedUniqueInventoryBuilder<>(name, this);}
 
 }

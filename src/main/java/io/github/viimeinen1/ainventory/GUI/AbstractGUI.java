@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import io.github.viimeinen1.ainventory.Common.InventoryProvider;
 import io.github.viimeinen1.ainventory.Common.Named;
 import io.github.viimeinen1.ainventory.Inventory.AbstractInventory;
-import io.github.viimeinen1.ainventory.Inventory.NamedInventory;
 import io.github.viimeinen1.ainventory.InventoryBuilder.AbstractInventoryBuilder;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView;
 import io.github.viimeinen1.ainventory.ItemBuilder.AbstractItemBuilder;
@@ -26,8 +25,8 @@ public abstract class AbstractGUI <
     > implements InventoryProvider<F> {
 
     @FunctionalInterface
-    public static interface GUIInventoryGetter <T extends Enum<T>, A extends AbstractItemBuilder<A, C>, C extends AbstractInventoryView<A, C>, E extends AbstractInventoryBuilder<A, C, E, F> & Named<T, ?>, F extends AbstractInventory<A, C, E, F> & Named<T, ?>> {
-        public F build(E builder);
+    public interface GUIInventoryGetter <T extends Enum<T>, A extends AbstractItemBuilder<A, C>, C extends AbstractInventoryView<A, C>, E extends AbstractInventoryBuilder<A, C, E, F> & Named<T, ?>, F extends AbstractInventory<A, C, E, F> & Named<T, ?>> {
+        F build(E builder);
     }
 
     public final Map<T, F> inventories;
@@ -36,7 +35,7 @@ public abstract class AbstractGUI <
     /**
      * create new GUI.
      * 
-     * @param inventoryEnumClass enum with all possible inventories in the GUI
+     * @param enumClass enum with all possible inventories in the GUI
      */
     public AbstractGUI(@NotNull Class<T> enumClass) {
         inventories = new EnumMap<>(enumClass);
@@ -45,7 +44,7 @@ public abstract class AbstractGUI <
     /**
      * Create inventory to the gui.
      * 
-     * @param inventory {@link NamedInventory}
+     * @param name name of the inventory (as enum)
      * @param fn {@link GUIInventoryGetter} getter for inventory
      * @return the inventory that was added.
      */
@@ -100,7 +99,7 @@ public abstract class AbstractGUI <
     }
 
     public void reload(@NotNull T name) {
-        get(name).ifPresent(inv -> inv.reload());
+        get(name).ifPresent(AbstractInventory::reload);
     }
 
     public void reload(@NotNull T name, @Nullable HumanEntity player) {

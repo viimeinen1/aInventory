@@ -26,18 +26,19 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
 
     /**
      * Create new aInventoryView with all parameters.
-     * 
+     *
      * All parameters are final, if change is required, create new view.
-     * 
-     * @param size
-     * @param title
-     * @param openFn
-     * @param closeFn
-     * @param requirementFn
-     * @param defaultClickFn
-     * @param clickFns
-     * @param itemReloads
-     * @param owner
+     *
+     * @param size size of view
+     * @param title title of view
+     * @param initFn initialization function of view
+     * @param openFn open function of view
+     * @param closeFn close function of view
+     * @param requirementFn requirement function of view
+     * @param defaultClickFn default click function of view
+     * @param owner owner of view
+     * @param values values (pages)
+     * @param disableDrag if drag placing should be disabled
      */
     public DefaultInventoryView(
         @NotNull INVENTORY_SIZE size,
@@ -49,7 +50,7 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
         @Nullable itemClickFunction defaultClickFn,
         @Nullable UUID owner,
         @Nullable Map<String, DataValue> values,
-        @NotNull boolean disableDrag
+        boolean disableDrag
     ) {
         super(
             size,
@@ -73,7 +74,7 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
     }
 
     @Override
-    public Inventory getInventory() {return this.inventory;}
+    public @NotNull Inventory getInventory() {return this.inventory;}
 
     @Override
     public DefaultItemBuilder<DefaultInventoryView> ItemBuilder(Integer slot) {
@@ -89,12 +90,12 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
     public <T> void ValuedItemList(Collection<Integer> slots, Collection<T> values, String key, @Nullable HumanEntity player, valuedItemFunction<T, DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView> fn) {
         int value = this.value(key);
         ValuedSlotMap<T> map = new ValuedSlotMap<>(slots, values);
-        map.values.entrySet().forEach(entry -> {
-            if (entry.getKey().value() != value) {
+        map.values.forEach((key1, value1) -> {
+            if (key1.value() != value) {
                 return;
             }
 
-            fn.run(new ValuedItemBuilder<>(entry.getValue(), new DefaultItemBuilder<>(this, entry.getKey().slot()), entry.getKey().slot(), Optional.ofNullable(player)));
+            fn.run(new ValuedItemBuilder<>(value1, new DefaultItemBuilder<>(this, key1.slot()), key1.slot(), Optional.ofNullable(player)));
         });
     }
     

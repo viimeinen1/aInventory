@@ -16,14 +16,14 @@ public class InventoryListener implements Listener {
     @EventHandler
     public static void onInventoryClick(InventoryClickEvent event) {
         Inventory inv = event.getClickedInventory();
-        if (inv == null || !(inv.getHolder(false) instanceof AbstractInventoryView inventory)) {
+        if (inv == null || !(inv.getHolder(false) instanceof AbstractInventoryView<?,?> inventory)) {
 
-            if (event.getView().getTopInventory().getHolder(false) instanceof AbstractInventoryView transferInventory 
+            if (event.getView().getTopInventory().getHolder(false) instanceof AbstractInventoryView<?,?> transferInventory
             && event.getAction().equals(InventoryAction.MOVE_TO_OTHER_INVENTORY)) {
                 transferInventory.onInventoryTransfer(event);
-            } else if (event.getView().getTopInventory().getHolder(false) instanceof AbstractInventoryView transferInventory
+            } else if (event.getView().getTopInventory().getHolder(false) instanceof AbstractInventoryView<?,?> transferInventory
             && event.getAction().equals(InventoryAction.COLLECT_TO_CURSOR)) {
-                transferInventory.onInvenoryDoubleClick(event);    
+                transferInventory.onInventoryDoubleClick(event);
             }
             return;
         }
@@ -34,7 +34,7 @@ public class InventoryListener implements Listener {
     public static void onInventoryDrag(InventoryDragEvent event) {
         Inventory inv = event.getInventory();
         // return if we don't have this plugin's inv
-        if (!(inv.getHolder(false) instanceof AbstractInventoryView inventory)) {
+        if (!(inv.getHolder(false) instanceof AbstractInventoryView<?,?> inventory)) {
             return;
         }
         inventory.onInventoryDrag(event);
@@ -43,14 +43,14 @@ public class InventoryListener implements Listener {
     @EventHandler
     public static void onInventoryOpen(InventoryOpenEvent event) {
         Inventory inv = event.getInventory();
-        if (!(inv.getHolder(false) instanceof AbstractInventoryView inventory)) {return;}
+        if (!(inv.getHolder(false) instanceof AbstractInventoryView<?,?> inventory)) {return;}
         inventory.onInventoryOpen(event);
     }
 
     @EventHandler
     public static void onInventoryClose(InventoryCloseEvent event) {
         Inventory inv = event.getInventory();
-        if (!(inv.getHolder(false) instanceof AbstractInventoryView inventory)) {return;}
+        if (!(inv.getHolder(false) instanceof AbstractInventoryView<?,?> inventory)) {return;}
         inventory.onInventoryClose(event);
     }
 

@@ -9,18 +9,17 @@ import io.github.viimeinen1.ainventory.ItemBuilder.AbstractItemBuilder;
 import io.github.viimeinen1.ainventory.ItemBuilder.ItemBuildable;
 import io.github.viimeinen1.ainventory.ItemBuilder.AbstractItemBuilder.ItemSlotType;
 
-public class ItemData <A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>> {
-
-    public final Optional<itemClickFunction> clickFn;
-    public final Optional<itemReloadFunction<A, B>> reloadFn;
-    public final Optional<itemRequirementFunction> requirementFn;
-    public final ItemSlotType slotType;
+public record ItemData<A extends AbstractItemBuilder<A, B>, B extends ItemBuildable<A, B>>(
+    Optional<itemClickFunction> clickFn, Optional<itemReloadFunction<A, B>> reloadFn,
+    Optional<itemRequirementFunction> requirementFn, ItemSlotType slotType) {
 
     public ItemData(itemClickFunction clickFn, itemReloadFunction<A, B> reloadFn, itemRequirementFunction requirementFn, ItemSlotType slotType) {
-        this.clickFn = Optional.ofNullable(clickFn);
-        this.reloadFn = Optional.ofNullable(reloadFn);
-        this.requirementFn = Optional.ofNullable(requirementFn);
-        this.slotType = slotType;
+        this(
+            Optional.ofNullable(clickFn),
+            Optional.ofNullable(reloadFn),
+            Optional.ofNullable(requirementFn),
+            slotType
+        );
     }
 
 }

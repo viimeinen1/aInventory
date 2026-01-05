@@ -10,7 +10,6 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import io.github.viimeinen1.ainventory.Inventory.AbstractInventory;
 import io.github.viimeinen1.ainventory.InventoryView.ItemData;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.itemClickFunction;
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView.itemReloadFunction;
@@ -30,7 +29,7 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
     /**
      * Different types of slots.
      */
-    public static enum ItemSlotType {
+    public enum ItemSlotType {
         BUTTON,
         CONTAINER,
         CRAFTING,
@@ -61,21 +60,19 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
     /**
      * Modify single slot.
      * 
-     * If slot already exists, the item will copy it's values.
-     * 
-     * Prefer {@link AbstractInventory#ItemBuilder(int)}
+     * If slot already exists, the item will copy its values.
      * 
      * @param inventory Inventory that the item(s) will be set to.
      * @param slot slot number
      */
-    public AbstractItemBuilder(@NotNull B inventory, @NotNull int slot) {
+    public AbstractItemBuilder(@NotNull B inventory, int slot) {
         this.inventory = inventory;
         this.slots.add(slot);
         var data = inventory.itemData().get(slot);
         if (data != null) {
-            this.reloadFn = data.reloadFn.orElse(null);
-            this.slotFn = data.clickFn.orElse(null);
-            this.slotType = data.slotType;
+            this.reloadFn = data.reloadFn().orElse(null);
+            this.slotFn = data.clickFn().orElse(null);
+            this.slotType = data.slotType();
         }
         this.item = inventory.getInventory().getItem(slot);
         if (this.item == null) {
@@ -89,9 +86,7 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
      * Modify multiple slots.
      * 
      * All previous parameters will be taken from the first item in the list.
-     * 
-     * Prefer {@link AbstractInventory#ItemBuilder(Collection)}
-     * 
+     *
      * @param inventory Inventory that the item(s) will be set to.
      * @param slots slot numbers
      */
@@ -101,9 +96,9 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
         Integer first = slots.iterator().next();
         var data = inventory.itemData().get(first);
         if (data != null) {
-            this.reloadFn = data.reloadFn.orElse(null);
-            this.slotFn = data.clickFn.orElse(null);
-            this.slotType = data.slotType;
+            this.reloadFn = data.reloadFn().orElse(null);
+            this.slotFn = data.clickFn().orElse(null);
+            this.slotType = data.slotType();
         }
         this.item = inventory.getInventory().getItem(first);
         if (this.item == null) {
@@ -178,16 +173,6 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
         } else {
             this.item = this.item.withType(material);
         }
-
-        // this works as well
-        // ItemStack newItem = ItemStack.of(material);
-        // if (this.item != null) {
-        //     newItem.copyDataFrom(this.item, this.item.getDataTypes().stream().filter((type) -> {
-        //         return !type.equals(DataComponentTypes.ITEM_MODEL);
-        //     }).collect(Collectors.toSet())::contains);
-        // }
-        // this.item = newItem;
-
         return getThis();
     }
 
@@ -218,10 +203,7 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
     /**
      * Reload function.
      * The function will be called every time inventory is opened.
-     * 
-     * Using null will cause the function to not change.
-     * Use {@link aItemBuilder#removeReloadFunction(boolean)} to remove reload function.
-     * 
+     *
      * @param fn reload function
      * @return builder
      */
@@ -239,18 +221,18 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
      * 
      * If {@link String}, the string will be deserialized as minimessage.
      * 
-     * @param <A> {@link String} or {@link Component}
+     * @param <R> {@link String} or {@link Component}
      * @param name displayname of item(s)
      * @param italic if name should be italic (default true)
      * @return builder
      */
-    public <R> A name(@Nullable R name, @NotNull boolean italic) {
-        if (name == null) {
-            return getThis();
-        } else if (name instanceof String str) {
-            item.setData(DataComponentTypes.CUSTOM_NAME, MiniMessage.miniMessage().deserialize(str).decoration(TextDecoration.ITALIC, italic));
-        } else if (name instanceof Component component) {
-            item.setData(DataComponentTypes.CUSTOM_NAME, component.decoration(TextDecoration.ITALIC, italic));
+    @SuppressWarnings("UnstableApiUsage")
+    public <R> A name(@Nullable R name, boolean italic) {
+        switch (name) {
+            case null -> {return getThis();}
+            case String str -> item.setData(DataComponentTypes.CUSTOM_NAME, MiniMessage.miniMessage().deserialize(str).decoration(TextDecoration.ITALIC, italic));
+            case Component component -> item.setData(DataComponentTypes.CUSTOM_NAME, component.decoration(TextDecoration.ITALIC, italic));
+            default -> {}
         }
         return getThis();
     }
@@ -262,21 +244,22 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
      * Accepts both {@link String} and {@link Component}.
      * If other types are used, those lines will be skipped.
      * 
-     * @param <A> {@link String} or {@link Component}
+     * @param <R> {@link String} or {@link Component}
      * @param loreLines lines
      * @param italic if lore should be italic
      * @return builder
      */
-    public <R> A lore(@Nullable Collection<R> loreLines, @NotNull boolean italic) {
+    @SuppressWarnings("UnstableApiUsage")
+    public <R> A lore(@Nullable Collection<R> loreLines, boolean italic) {
         if (loreLines == null) {return getThis();}
         ItemLore.Builder loreBuilder = ItemLore.lore();
         loreLines.forEach(line -> {
-            if (line == null) {
-                loreBuilder.addLine(Component.empty());
-            } else if (line instanceof String str) {
-                loreBuilder.addLine(MiniMessage.miniMessage().deserialize(str).decoration(TextDecoration.ITALIC, italic));
-            } else if (line instanceof Component component) {
-                loreBuilder.addLine(component.decoration(TextDecoration.ITALIC, italic));
+            switch (line) {
+                case null -> loreBuilder.addLine(Component.empty());
+                case String str ->loreBuilder.addLine(MiniMessage.miniMessage().deserialize(str).decoration(TextDecoration.ITALIC, italic));
+                case Component component -> loreBuilder.addLine(component.decoration(TextDecoration.ITALIC, italic));
+                default -> {
+                }
             }
         });
         item.setData(DataComponentTypes.LORE, loreBuilder.build());
@@ -285,11 +268,8 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
 
     /**
      * Function that is run when item(s) is clicked.
-     * 
-     * Using null will keep original function.
-     * Use {@link aItemBuilder#removeSlotFuntion(boolean)} to remove slot function.
-     * 
-     * @param slotFn {@link itemClickEvent}
+     *
+     * @param slotFn {@link itemClickFunction}
      * @return builder
      */
     public A function(@Nullable itemClickFunction slotFn) {
@@ -304,6 +284,7 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
      * @param value component value
      * @return builder
      */
+    @SuppressWarnings("UnstableApiUsage")
     public <R> A setData(@NotNull DataComponentType.Valued<R> type, @NotNull R value) {
         item.setData(type, value);
         return getThis();
@@ -318,10 +299,10 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
      * - CRAFTING: same as container, except that the slot is returned back to player inventory on inventory close.
      * - BORDER: everything disabled
      * - RESULT: only taking from slot is allowed. Is placed to player inventory if inventory is closed.
-     * - CUSTOM: custom behaviour (default)
+     * - CUSTOM: custom behavior (default)
      * 
      * @param type type of slot
-     * @return
+     * @return builder
      */
     public A slotType(ItemSlotType type) {
         this.slotType = type;
@@ -329,9 +310,9 @@ public abstract class AbstractItemBuilder <A extends AbstractItemBuilder<A, B>, 
     }
 
     /**
-     * Requires to return true to be allowed to be placed to this slot.
+     * Limit items that can be placed to this slot.
      * 
-     * @param fn requirement function (returns true if item is allowed to be placed here)
+     * @param fn requirement function (true if item can be placed to this slot)
      * @return builder
      */
     public A require(itemRequirementFunction fn) {

@@ -23,7 +23,7 @@ public class GUI <
     /**
      * create new GUI.
      * 
-     * @param inventoryEnumClass enum with all possible inventories in the GUI
+     * @param enumClass enum with all possible inventories in the GUI
      */
     public GUI(@NotNull Class<T> enumClass) {
         super(enumClass);

@@ -6,7 +6,7 @@ public class DataValue {
 
     /**
      * Create new DataValue.
-     * 
+     *
      * value will start at 0, and it can't get over max value (inclusive).
      * 
      * @param max maximum value (inclusive).
@@ -17,7 +17,7 @@ public class DataValue {
 
     /**
      * Add 1 to value.
-     * 
+     *
      * Will stop at max value.
      * 
      * @return current value.
@@ -43,7 +43,7 @@ public class DataValue {
 
     /**
      * Set value. Will not change value if it's not between 0 and max value.
-     * 
+     *
      * @param value value to set to.
      * @return the current value.
      */

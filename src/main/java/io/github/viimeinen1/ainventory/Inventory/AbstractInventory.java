@@ -8,12 +8,11 @@ import io.github.viimeinen1.ainventory.InventoryBuilder.AbstractInventoryBuilder
 import io.github.viimeinen1.ainventory.InventoryView.AbstractInventoryView;
 import io.github.viimeinen1.ainventory.ItemBuilder.AbstractItemBuilder;
 
-// TODO: javadocs
 // TODO: default builders (for exit, next page, last page, etc.)
 // TODO: gui that accepts multiple types of inventories
 
 /**
- * Custom inventory with addinational features like reloading individual slots.
+ * Custom inventory with additional features like reloading individual slots.
  */
 public abstract class AbstractInventory <
         A extends AbstractItemBuilder<A, C>, 
@@ -37,9 +36,9 @@ public abstract class AbstractInventory <
     /**
      * Create new {@link AbstractInventory}.
      * 
-     * Prefer {@link AbstractInventory.Builder#build()} to build new inventory.
+     * Prefer {@link AbstractInventoryBuilder#build()} to build new inventory.
      * 
-     * @param builder extends {@link AbstractInventory.Builder}
+     * @param builder extends {@link AbstractInventoryBuilder}
      */
     public AbstractInventory(E builder) {
         this.builder = builder;

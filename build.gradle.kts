@@ -1,5 +1,5 @@
 group = "io.github.viimeinen1.ainventory"
-version = "2.2.0-pre1"
+version = "2.3.0"
 description = "Inventory GUI library"
 
 plugins {
@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
 }
 
 java {

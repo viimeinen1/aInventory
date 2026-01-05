@@ -44,9 +44,9 @@ public final class NamedInventory <
     /**
      * Create new {@link AbstractInventory}.
      * 
-     * Prefer {@link AbstractInventory.Builder#build()} to build new inventory.
+     * Prefer {@link NamedInventoryBuilder} to build new inventory.
      * 
-     * @param builder extends {@link AbstractInventory.Builder}
+     * @param builder extends {@link io.github.viimeinen1.ainventory.InventoryBuilder.AbstractInventoryBuilder}
      */
     public NamedInventory(NamedInventoryBuilder<T, K> builder) {
         super(builder);
@@ -72,19 +72,6 @@ public final class NamedInventory <
 
     @Override
     public NamedInventory<T, K> getThis() {return this;}
-
-    // public static <
-    //     T extends Enum<T>, 
-    //     K extends AbstractGUI<
-    //         T, 
-    //         DefaultItemBuilder<DefaultInventoryView>, 
-    //         DefaultInventoryView, 
-    //         NamedInventoryBuilder<T, ? extends AbstractGUI<T, DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView, NamedInventoryBuilder<T, K>, NamedInventory<T, K>>>, 
-    //         NamedInventory<T, ? extends AbstractGUI<T, DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView, NamedInventoryBuilder<T, K>, NamedInventory<T, K>>>
-    //     >
-    // > NamedInventoryBuilder<T, K> builder(T name, K provider) {
-    //     return new NamedInventoryBuilder<>(name, provider);
-    // }
 
     public static <
         T extends Enum<T>,

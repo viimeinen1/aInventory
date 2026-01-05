@@ -61,7 +61,7 @@ public abstract class AbstractInventoryBuilder <
      * Minimum value is 0.
      * 
      * @param key key.
-     * @param max maxumum value (inclusive).
+     * @param max maximum value (inclusive).
      * @return builder
      */
     public E value(String key, int max) {
@@ -70,7 +70,7 @@ public abstract class AbstractInventoryBuilder <
     }
 
     /**
-     * Function that will be ran every time inventory is clicked.
+     * Will be run every time inventory is clicked.
      * 
      * @param fn {@link itemClickFunction}
      * @return builder
@@ -126,22 +126,18 @@ public abstract class AbstractInventoryBuilder <
      * @return builder
      */
     public <S> E title(S title) {
-        switch (title) {
-            case Component component -> {
-                this.title = component;
-            }
-            case String txt -> {
-                this.title = MiniMessage.miniMessage().deserialize(txt);
-            }
-            default -> {}
-        }
+        this.title = switch (title) {
+            case Component component -> component;
+            case String txt -> MiniMessage.miniMessage().deserialize(txt);
+            default -> this.title;
+        };
         return getThis();
     }
 
     /**
      * Set owner of the inventory.
      * 
-     * Setting owner of the inventory will restrict it's usage to only it's owner.
+     * Setting owner of the inventory will restrict its usage to only it's owner.
      * 
      * @param owner {@link UUID} of the owner.
      * @return builder
@@ -152,11 +148,11 @@ public abstract class AbstractInventoryBuilder <
     }
 
     /**
-     * Function that is ran every time inventory is opened, or slot is clicked.
+     * Function will be run every time inventory is clicked or opened.
      * 
-     * If function returns false, all futher execution is blocked.
+     * If function returns false, all further execution is blocked.
      * 
-     * @param fn {@link requirementFunction}
+     * @param fn {@link inventoryRequirementFunction}
      * @return builder
      */
     public E require(inventoryRequirementFunction fn) {

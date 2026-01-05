@@ -11,11 +11,8 @@ public class IndexStream {
 
     /**
      * Convert collection to stream with {@link StreamValue}s.
-     * 
      * Order might be random.
-     * 
      * Indexes will start at 0. Use {@link Stream#limit(long)} to limit the amount of values in the stream.
-     * 
      * Usage:
      * aValueStream.toStream(collection).limit(limit).forEach(val -> {val.index(); val.value()});
      * 
@@ -25,9 +22,7 @@ public class IndexStream {
      */
     public static <T> Stream<StreamValue<T>> toStream(Collection<T> collection) {
         IndexedCollection<T> streamable = new IndexedCollection<>();
-        collection.forEach(val -> {
-            streamable.add(val);
-        });
+        collection.forEach(streamable::add);
         return streamable.values.stream();
     }
 
@@ -43,7 +38,7 @@ public class IndexStream {
          * 
          * Will assign value an index in order.
          * 
-         * @param value
+         * @param value add value to the IndexStream
          */
         public void add(T value) {
             values.add(new StreamValue<>(i, value));
@@ -54,47 +49,5 @@ public class IndexStream {
     /**
      * Stream value with index and value.
      */
-    public static class StreamValue<T> {
-        public final int i;
-        public final T value;
-
-        /**
-         * Get index of value
-         * 
-         * @return index of value
-         */
-        public int i() {return i;}
-
-        /**
-         * Get index of value
-         * 
-         * @return index of value
-         */
-        public int index() {return i;}
-
-        /**
-         * Get value
-         * 
-         * @return value
-         */
-        public T val() {return value;}
-
-        /**
-         * Get value
-         * 
-         * @return value
-         */
-        public T value() {return value;}
-
-        /**
-         * Create new StreamValue
-         * 
-         * @param i index
-         * @param value value
-         */
-        public StreamValue(int i, T value) {
-            this.i = i;
-            this.value = value;
-        }
-    }
+    public record StreamValue<T>(int i, T value) {}
 }

@@ -1,6 +1,6 @@
 package io.github.viimeinen1.ainventory.Common;
 
 public interface Named <T extends Enum<T>, K extends InventoryProvider<?>> {
-    public T name();
-    public K provider();
+    T name();
+    K provider();
 }

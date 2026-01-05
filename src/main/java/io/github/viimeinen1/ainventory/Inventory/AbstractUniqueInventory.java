@@ -44,11 +44,9 @@ public abstract class AbstractUniqueInventory <K extends AbstractUniqueInventory
      */
     @Override
     public void initialize() {
-        views.entrySet().forEach(entry -> {
-            entry.getValue().getInventory().getViewers().forEach(pl -> {
-                entry.getValue().initialize(pl);
-            });
-        });
+        views.forEach((key, value) ->
+            value.getInventory().getViewers().forEach(value::initialize)
+        );
     }
 
     @Override
@@ -81,11 +79,9 @@ public abstract class AbstractUniqueInventory <K extends AbstractUniqueInventory
      */
     @Override
     public void reload() {
-        views.entrySet().forEach(entry -> {
-            entry.getValue().getInventory().getViewers().forEach(pl -> {
-                entry.getValue().reload(pl);
-            });
-        });
+        views.forEach((key, value) ->
+            value.getInventory().getViewers().forEach(value::reload)
+        );
     }
 
     @Override
@@ -111,11 +107,9 @@ public abstract class AbstractUniqueInventory <K extends AbstractUniqueInventory
      */
     @Override
     public void reload(Integer... slots) {
-        views.entrySet().forEach(entry -> {
-            entry.getValue().getInventory().getViewers().forEach(pl -> {
-                entry.getValue().reload(pl, slots);
-            });
-        });
+        views.forEach((key, value) -> value.getInventory().getViewers().forEach(pl ->
+            value.reload(pl, slots))
+        );
     }
 
     @Override
