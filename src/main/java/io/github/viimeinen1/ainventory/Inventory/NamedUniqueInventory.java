@@ -22,7 +22,7 @@ public final class NamedUniqueInventory <T extends Enum<T>, K extends AbstractGU
     public NamedUniqueInventory<T, K> getThis() {return this;}
 
     public static <T extends Enum<T>, K extends AbstractGUI<T,?,?,?,?>> NamedUniqueInventoryBuilder<T, K> builder(T name, K provider) {
-        return new NamedUniqueInventoryBuilder<T,K>(name,provider);
+        return new NamedUniqueInventoryBuilder<>(name,provider);
     }
 
 }

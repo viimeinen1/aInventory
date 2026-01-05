@@ -23,7 +23,7 @@ public class NamedUniqueInventoryBuilder <T extends Enum<T>, K extends AbstractG
 
     @Override
     public NamedUniqueInventory<T, K> build() {
-        return new NamedUniqueInventory<T, K>(getThis());
+        return new NamedUniqueInventory<>(getThis());
     }
 
 }

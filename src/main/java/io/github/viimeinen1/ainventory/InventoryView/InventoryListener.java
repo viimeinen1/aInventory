@@ -34,7 +34,7 @@ public class InventoryListener implements Listener {
     public static void onInventoryDrag(InventoryDragEvent event) {
         Inventory inv = event.getInventory();
         // return if we don't have this plugin's inv
-        if (inv == null || !(inv.getHolder(false) instanceof AbstractInventoryView inventory)) {
+        if (!(inv.getHolder(false) instanceof AbstractInventoryView inventory)) {
             return;
         }
         inventory.onInventoryDrag(event);

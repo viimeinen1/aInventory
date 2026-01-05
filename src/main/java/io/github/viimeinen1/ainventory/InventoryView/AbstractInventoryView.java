@@ -27,8 +27,8 @@ import org.jetbrains.annotations.Nullable;
 import io.github.viimeinen1.ainventory.Common.DataValue;
 import io.github.viimeinen1.ainventory.Common.IndexStream;
 import io.github.viimeinen1.ainventory.ItemBuilder.AbstractItemBuilder;
-import io.github.viimeinen1.ainventory.ItemBuilder.ItemBuildable;
 import io.github.viimeinen1.ainventory.ItemBuilder.AbstractItemBuilder.ItemSlotType;
+import io.github.viimeinen1.ainventory.ItemBuilder.ItemBuildable;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 
@@ -150,6 +150,7 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
 
     private final Map<String, DataValue> data = new HashMap<>();
 
+    @Override
     public Map<Integer, ItemData<A, C>> itemData() {return itemData;}
 
     abstract A ItemBuilder(Integer slot);
@@ -199,9 +200,11 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         this.owner = Optional.ofNullable(owner);
         this.disableDrag = disableDrag;
 
-        values.entrySet().forEach(entry -> {
-            this.createValue(entry.getKey(), entry.getValue());
-        });
+        if (values != null) {
+            values.entrySet().forEach(entry -> {
+                this.createValue(entry.getKey(), entry.getValue());
+            });
+        }
     }
 
     public void open(@NotNull HumanEntity player) {
@@ -215,19 +218,18 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         }
         reload(player); // reload inventory
         player.openInventory(inventory);
-        return;
     }
 
     public void reload() {
-        itemData.forEach((slot, data) -> {
-            data.reloadFn.ifPresent(fn -> fn.run(ItemBuilder(slot), Optional.empty()));
+        itemData.forEach((slot, dt) -> {
+            dt.reloadFn.ifPresent(fn -> fn.run(ItemBuilder(slot), Optional.empty()));
         });
         update();
     }
 
     public void reload(@Nullable HumanEntity player) {
-        itemData.forEach((slot, data) -> {
-            data.reloadFn.ifPresent(fn -> fn.run(ItemBuilder(slot), Optional.ofNullable(player)));
+        itemData.forEach((slot, dt) -> {
+            dt.reloadFn.ifPresent(fn -> fn.run(ItemBuilder(slot), Optional.ofNullable(player)));
         });
         update();
     }
@@ -440,6 +442,10 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
 
         ItemStack[] contents = dest.getContents();
         List<ItemStack> containerItems = new ArrayList<>();
+
+        // for some reason container is empty
+        if (contents == null || item == null) {return;}
+
         for (ItemStack c : contents) {
             if (c == null) {
                 containerItems.add(ItemStack.empty());
@@ -544,6 +550,9 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
 
         // remove crafting slots
         ItemStack[] contents = event.getInventory().getContents();
+
+        if (contents == null) {return;}
+
         List<ItemStack> containerItems = new ArrayList<>();
         for (ItemStack c : contents) {
             if (c == null) {

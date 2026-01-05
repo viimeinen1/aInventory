@@ -7,12 +7,21 @@ import io.github.viimeinen1.ainventory.InventoryBuilder.NamedUniqueInventoryBuil
 import io.github.viimeinen1.ainventory.InventoryView.DefaultInventoryView;
 import io.github.viimeinen1.ainventory.ItemBuilder.DefaultItemBuilder;
 
-public final class UniqueGUI <T extends Enum<T>> extends AbstractGUI<T, DefaultItemBuilder<DefaultInventoryView>, DefaultInventoryView, NamedUniqueInventoryBuilder<T, UniqueGUI<T>>, NamedUniqueInventory<T, UniqueGUI<T>>> {
+public final class UniqueGUI <
+        T extends Enum<T>
+    > extends AbstractGUI<
+        T, 
+        DefaultItemBuilder<DefaultInventoryView>, 
+        DefaultInventoryView, 
+        NamedUniqueInventoryBuilder<T, UniqueGUI<T>>, 
+        NamedUniqueInventory<T, UniqueGUI<T>>
+    > {
     
     public UniqueGUI(@NotNull Class<T> enumClass) {
         super(enumClass);
     }
 
-    public NamedUniqueInventoryBuilder<T, UniqueGUI<T>> builder(T name) {return new NamedUniqueInventoryBuilder<T, UniqueGUI<T>>(name, this);};
+    @Override
+    public NamedUniqueInventoryBuilder<T, UniqueGUI<T>> builder(T name) {return new NamedUniqueInventoryBuilder<>(name, this);};
 
 }

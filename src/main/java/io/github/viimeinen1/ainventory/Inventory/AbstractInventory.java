@@ -15,7 +15,12 @@ import io.github.viimeinen1.ainventory.ItemBuilder.AbstractItemBuilder;
 /**
  * Custom inventory with addinational features like reloading individual slots.
  */
-public abstract class AbstractInventory <A extends AbstractItemBuilder<A, C>, C extends AbstractInventoryView<A, C>, E extends AbstractInventoryBuilder<A, C, E, F>, F extends AbstractInventory<A, C, E, F>> {
+public abstract class AbstractInventory <
+        A extends AbstractItemBuilder<A, C>, 
+        C extends AbstractInventoryView<A, C>, 
+        E extends AbstractInventoryBuilder<A, C, E, F>, 
+        F extends AbstractInventory<A, C, E, F>
+    > {
 
     public final E builder;
     public final C view;

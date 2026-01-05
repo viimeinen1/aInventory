@@ -77,12 +77,12 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
 
     @Override
     public DefaultItemBuilder<DefaultInventoryView> ItemBuilder(Integer slot) {
-        return new DefaultItemBuilder<DefaultInventoryView>(this, slot);
+        return new DefaultItemBuilder<>(this, slot);
     }
 
     @Override
     public DefaultItemBuilder<DefaultInventoryView> ItemBuilder(Collection<Integer> slots) {
-        return new DefaultItemBuilder<DefaultInventoryView>(this, slots);
+        return new DefaultItemBuilder<>(this, slots);
     }
 
     @Override
@@ -94,7 +94,7 @@ public final class DefaultInventoryView extends AbstractInventoryView<DefaultIte
                 return;
             }
 
-            fn.run(new ValuedItemBuilder<T,DefaultItemBuilder<DefaultInventoryView>,DefaultInventoryView>(entry.getValue(), new DefaultItemBuilder<>(this, entry.getKey().slot()), entry.getKey().slot(), Optional.ofNullable(player)));
+            fn.run(new ValuedItemBuilder<>(entry.getValue(), new DefaultItemBuilder<>(this, entry.getKey().slot()), entry.getKey().slot(), Optional.ofNullable(player)));
         });
     }
     
