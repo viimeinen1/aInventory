@@ -446,18 +446,17 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         }
 
         var containerSlots = IndexStream.toStream(containerItems)
-            .filter(val -> {
-                var reqFn = itemData.get(val.i()).requirementFn();
-                return itemData.containsKey(val.i()) &&
+            .filter(val ->
+                itemData.containsKey(val.i()) &&
                 (
                     itemData.get(val.i()).slotType().equals(ItemSlotType.CONTAINER) ||
                     itemData.get(val.i()).slotType().equals(ItemSlotType.CRAFTING)
                 ) &&
                 (
-                    reqFn.isEmpty() ||
-                    reqFn.get().run(item)
-                );
-            }).toList();
+                    itemData.get(val.i()).requirementFn().isEmpty() ||
+                    itemData.get(val.i()).requirementFn().get().run(item)
+                )
+            ).toList();
 
         // partial slots
         applicableSlots.addAll(containerSlots.stream()
@@ -548,18 +547,17 @@ public abstract class AbstractInventoryView <A extends AbstractItemBuilder<A, C>
         }
 
         IndexStream.toStream(containerItems)
-            .filter(val -> {
-                var reqFn = itemData.get(val.i()).requirementFn();
-                return itemData.containsKey(val.i()) &&
+            .filter(val ->
+                itemData.containsKey(val.i()) &&
                 (
                     itemData.get(val.i()).slotType().equals(ItemSlotType.CRAFTING) ||
                     itemData.get(val.i()).slotType().equals(ItemSlotType.RESULT)
                 ) &&
                 (
-                    reqFn.isEmpty() ||
-                    reqFn.get().run(val.value())
-                );
-            })
+                    itemData.get(val.i()).requirementFn().isEmpty() ||
+                    itemData.get(val.i()).requirementFn().get().run(val.value())
+                )
+            )
             .forEach(val -> {
                 event.getPlayer().getInventory().addItem(val.value())
                     .values().forEach(item -> event.getPlayer().dropItem(item));
