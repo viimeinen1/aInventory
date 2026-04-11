@@ -1,0 +1,14 @@
+// temporary file for ideas
+
+// way to create inventories
+
+.content((builder) -> {
+    // setting item without identifier
+    builder.set(Slot.builder(), 1);
+
+    // setting item with identifier
+    // <value>, <page>, <builder>
+    builder.subContent("identifier", 1, (subBuilder) -> {
+        builder.set(Slot.builder(), 1);
+    }
+})

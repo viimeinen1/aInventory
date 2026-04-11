@@ -1,5 +1,5 @@
 group = "io.github.viimeinen1.ainventory"
-version = "2.3.1"
+version = "3.0.0"
 description = "Inventory GUI library"
 
 plugins {
@@ -20,7 +20,7 @@ dependencies {
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
 }
 
 mavenPublishing {
@@ -30,7 +30,7 @@ mavenPublishing {
 }
 
 mavenPublishing {
-  coordinates(group.toString(), name.toString(), version.toString())
+  coordinates(group.toString(), name, version.toString())
 
   pom {
     name.set("aInventory")

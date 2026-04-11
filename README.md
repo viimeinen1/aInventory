@@ -5,6 +5,20 @@ The library was made for usage in my own plugins, so some features may be missin
 
 Plan is to add more functions as I requre them (like animations, pages, or other stuff).
 
+## v3 in progress
+
+complete recode of whole inventory system
+
+Goals:
+- Better content managing
+- Fix edge cases
+- can be initialized in static variables (no need to wait for server start)
+- has flag for `shared`, instead of `Default` and `Unique`
+- slot templates like next / prev buttons that automatically change if can't change to next page
+
+ideas:
+- mode inventory sizes
+
 ## Add as dependency
 
 To use the library in your project, add it as a dependency.
