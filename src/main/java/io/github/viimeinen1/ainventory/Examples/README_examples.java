@@ -1,43 +1,20 @@
-# aInventory
-Inventory GUI library with focus on having the whole configuration on one file (instead of needing to move listeners to another method or spot).
+package io.github.viimeinen1.ainventory.Examples;
 
-The library was made for usage in my own plugins, so some features may be missing.
+import io.github.viimeinen1.ainventory.GUI.Gui;
+import io.github.viimeinen1.ainventory.Inventory.AbstractInventory;
+import io.github.viimeinen1.ainventory.Inventory.Inventory;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
 
-Library does not currently support animations (easily), or other inventory sizes than 9x1 to 9x6
+import java.util.List;
+import java.util.UUID;
 
-## features
+public class README_examples {
 
-- All functionality in one place
-- Clean item and inventory creation with builders
-- custom drag, double click and shift click recreation for better content managing.
-- Context system that allows creating multiple pages per inventory
-- Lists that wrap to next page 
-- Patterns
-- GUIs with custom keys for better multi-view GUI support
-
-## Add as dependency
-
-To use the library in your project, add it as a dependency.
-
-The dependency can be seen at https://central.sonatype.com/artifact/io.github.viimeinen1.ainventory/aInventory
-
-build.gradle.kts
-```kotlin
-dependencies (
-    implementation("io.github.viimeinen1.ainventory:aInventory:3.1.0")
-)
-```
-
-## Usage
-
-<details>
-<summary>Creating basic inventory</summary>
-
-```java
-/*
+    /*
         Basic inventory usage
      */
-Inventory inventory = Inventory.builder()
+    Inventory basicInventory = Inventory.builder()
 
         // set size of the inventory
         .size(AbstractInventory.SIZE.CHEST_9x3)
@@ -76,10 +53,35 @@ Inventory inventory = Inventory.builder()
         // build inventory
         .build();
 
-/*
-    All options are optional, even this is a valid inventory (tough with no content)
- */
-Inventory emptyInventory = Inventory.builder().build();
-```
+    /*
+        All options are optional, even this is a valid inventory (tough with no content)
+     */
+    Inventory emptyInventory = Inventory.builder().build();
 
-</details>
+    // then we can open inventories with just calling Inventory#open(HumanEntity)
+    public void openForPlayer(Player player) {
+        basicInventory.open(player);
+    }
+
+
+    /*
+        Adding content
+     */
+    Inventory contentExample = Inventory.builder()
+        .size(AbstractInventory.SIZE.CHEST_9x3)
+        .content(c -> {
+
+            // add new item to slot 10
+            c.set(10)
+                .build();
+
+            // create border
+            c.pattern(
+                "#########",
+                "#.......#",
+                "#########"
+            ).material(Material.BLACK_STAINED_GLASS_PANE)
+                .build();
+
+        }).build();
+}

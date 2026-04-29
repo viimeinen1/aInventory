@@ -13,11 +13,16 @@ import org.jetbrains.annotations.NotNull;
 
 public class InventoryListener implements Listener {
 
+    /**
+     * If this listener is initialized
+     */
     public static boolean initialized = false;
 
     /**
      * Initialize listener for aInventory.
      * Without initializing the listener, the click functions will not work.
+     * <br><br>
+     * Will fail silently if this listener was already initialized
      *
      * @param plugin {@link JavaPlugin} that the listener will be listed for.
      */

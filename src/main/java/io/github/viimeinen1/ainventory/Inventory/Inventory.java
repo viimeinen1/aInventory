@@ -11,18 +11,28 @@ import java.util.UUID;
 public class Inventory extends AbstractInventory {
     public final HashMap<UUID, View> views = new HashMap<>();
 
+    /**
+     * Create new inventory
+     *
+     * @param builder inventory builder
+     */
     public Inventory(AbstractInventory.Builder builder) {
         super(builder);
     }
 
+    /**
+     * Get new inventory builder.
+     *
+     * @return new inventory builder
+     */
     public static Inventory.Builder builder() {
         return new Inventory.Builder();
     }
 
     /**
-     * get view of player.
+     * get view associated with this player. As this inventory type is not shared, it always excepts a player. Giving <code>null</code> as a parameter will throw an error.
      *
-     * @throws IllegalArgumentException if player is null
+     * @throws IllegalArgumentException if player is null, since this type of inventory always excepts player.
      *
      * @param player player
      * @return view linked to the player

@@ -8,14 +8,33 @@ import org.jetbrains.annotations.Nullable;
 public class SharedInventory extends AbstractInventory {
     private View view;
 
+    /**
+     * Create new shared inventory
+     *
+     * @param builder new builder
+     */
     public SharedInventory(Builder builder) {
         super(builder);
     }
 
+    /**
+     * Get new inventory builder.
+     * <br><br>
+     * Use {@link Builder#buildShared()} to create new shared inventory. Otherwise, a normal inventory is created.
+     *
+     * @return new inventory builder
+     */
     public static SharedInventory.Builder builder() {
         return new SharedInventory.Builder();
     }
 
+    /**
+     * Get view associated with this inventory.
+     * As this inventory is shared, will always return the same view, even if player is null.
+     *
+     * @param player player (or null)
+     * @return view associated with this inventory
+     */
     @Override
     public @NotNull View getView(@Nullable HumanEntity player) {
         if (view == null) {

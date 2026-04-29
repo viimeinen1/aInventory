@@ -3,8 +3,11 @@ package io.github.viimeinen1.ainventory.View;
 import io.github.viimeinen1.ainventory.Interfaces.*;
 import io.github.viimeinen1.ainventory.Inventory.AbstractInventory;
 import io.github.viimeinen1.ainventory.Slot.Slot;
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.datacomponent.item.TooltipDisplay;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.*;
@@ -16,26 +19,58 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.Array;
 import java.util.*;
 
 /**
- * What player sees
+ * Custom view of an inventory
  */
 public class View implements InventoryHolder {
+
+    /**
+     * Group of slots with a context.
+     */
     public static class SlotGroup {
+
+        /**
+         * Context of this group
+         */
         public final String context;
+
+        /**
+         * Value of the context
+         */
         public int value;
+
+        /**
+         * Slots in this group, and their position in the view.
+         */
         public final HashMap<Integer, Slot> slots = new HashMap<>();
 
+        /**
+         * Create new SlotGroup. Default context value is 0.
+         *
+         * @param context context of this group
+         */
         public SlotGroup(String context) {
             this.context = context;
         }
 
+        /**
+         * If this slot exists in this group.
+         *
+         * @param slot slot to compare to
+         * @return if this slot is in this group
+         */
         public boolean hasSlot(int slot) {
             return this.slots.containsKey(slot);
         }
 
+        /**
+         * Get the SubSlot that is associated with this context, and context value.
+         *
+         * @param slot slot
+         * @return SubSlot
+         */
         public @Nullable Slot.SubSlot getCurrent(int slot) {
             var s = this.slots.get(slot);
             if (s == null) return null;
@@ -47,6 +82,7 @@ public class View implements InventoryHolder {
 
     private final org.bukkit.inventory.Inventory inventory;
     private final HashMap<String, SlotGroup> slotGroups;
+    private final SlotGroup globalGroup = new SlotGroup(ContentBuilder.CONTEXT.GLOBAL);
 
     private final InventoryContent content;
     private final ItemClick onClick;
@@ -57,6 +93,20 @@ public class View implements InventoryHolder {
     private final Set<UUID> whitelist;
     private final HumanEntity player;
 
+    /**
+     * Create new view
+     *
+     * @param size size of the view
+     * @param content content of the view
+     * @param onClick click action
+     * @param title title of the inventory that is opened
+     * @param requirement requirement for opening this view
+     * @param open open action
+     * @param close close action
+     * @param whitelisted if this view is whitelisted
+     * @param whitelist whitelisted players
+     * @param player player associated with this view (the view will be built using this player)
+     */
     public View(
         @NotNull AbstractInventory.SIZE size,
         @NotNull InventoryContent content,
@@ -84,12 +134,26 @@ public class View implements InventoryHolder {
         reload();
     }
 
+    /**
+     * Get the inventory associated with this view.
+     *
+     * @return inventory
+     */
     @Override
     public @NotNull org.bukkit.inventory.Inventory getInventory() {
         return inventory;
     }
 
+    /**
+     * Get group with this identifier.
+     * If no group exists, new group with this identifier is created.
+     *
+     * @param id identifier of the group
+     * @return SlotGroup
+     */
     private SlotGroup getGroup(String id) {
+        if (ContentBuilder.CONTEXT.GLOBAL.equals(id)) return globalGroup;
+
         var group = this.slotGroups.get(id);
         if (group == null) {
             group = new SlotGroup(id);
@@ -98,7 +162,17 @@ public class View implements InventoryHolder {
         return group;
     }
 
+    /**
+     * Get the SubSlot that is currently being displayed in this slot.
+     *
+     * @param slot slot
+     * @return SubSlot, null if no SubSlot is displayed here
+     */
     private @Nullable Slot.SubSlot getCurrent(int slot) {
+        if (this.globalGroup.slots.containsKey(slot) && this.globalGroup.slots.get(slot).slotMap.containsKey(0)) {
+            return globalGroup.slots.get(slot).slotMap.get(0);
+        }
+
         for (SlotGroup group : this.slotGroups.values()) {
             if (group.hasSlot(slot)) {
                 return group.getCurrent(slot);
@@ -107,28 +181,38 @@ public class View implements InventoryHolder {
         return null;
     }
 
+    /**
+     * Apply slots from SubSlot builder to this view.
+     *
+     * @param builder SubSlot builder
+     */
     public void applySlots(Slot.SubSlot.Builder builder) {
         for (int slot : builder.slots) {
             if (slot < 0 || slot >= inventory.getSize()) continue;
             var group = this.getGroup(builder.context);
             if (!group.slots.containsKey(slot)) group.slots.put(slot, new Slot());
-            group.slots.get(slot).slotMap.put(builder.value, new Slot.SubSlot(builder));
+            group.slots.get(slot).slotMap.put(builder.contextValue, new Slot.SubSlot(builder));
         }
     }
 
     /**
-     * Write state to inventory
+     * Write current state to inventory
      */
     public void write() {
         write(this.inventory);
     }
 
     /**
-     * Write state to inventory
+     * Write current state to inventory.
+     * Will call {@link View#update()} to update view to its viewers.
      *
      * @param inventory inventory to write to
      */
     public void write(org.bukkit.inventory.Inventory inventory) {
+        for (var entry : this.globalGroup.slots.entrySet()) {
+            entry.getValue().write(inventory, entry.getKey(), 0);
+        }
+
         for (var group : this.slotGroups.values()) {
             for (var entry : group.slots.entrySet()) {
                 entry.getValue().write(inventory, entry.getKey(), group.value);
@@ -148,13 +232,23 @@ public class View implements InventoryHolder {
         });
     }
 
+    /**
+     * Open this view for player.
+     * Will also trigger {@link View#write()}.
+     *
+     * @param player player
+     */
     public void open(HumanEntity player) {
         write();
         player.openInventory(this.inventory);
     }
 
     /**
-     * Reload inventory completely
+     * Reload inventory completely.
+     * Will delete all contents in the inventory that is player placed,
+     * and re-run all builder functions.
+     * <br><br>
+     * Useful for updating inventory if builder functions give different results depending on a state.
      */
     public void reload() {
         this.getInventory().clear();
@@ -162,7 +256,7 @@ public class View implements InventoryHolder {
 
         content.run(new View.ContentBuilder(
             this,
-            "default",
+            ContentBuilder.CONTEXT.DEFAULT,
             0,
             this.player
         ));
@@ -171,15 +265,15 @@ public class View implements InventoryHolder {
     }
 
     /**
-     * Set item to storage. Will display on top of specified item in the slot, and can be returned with returnOnClose().
-     * <br><br>
+     * Set item to storage like player would have placed it.
+     * Will display on top of specified item in the slot, and can be returned with returnOnClose().
      * The item will only be returned to the player with same uuid.
      *
      * @param slot slot to place item to
      * @param item item to place
      * @param uuid uuid of player who the item will be returned to
      */
-    public void setToStorage(int slot, @NotNull ItemStack item, @NotNull UUID uuid) {
+    public void setStorage(int slot, @NotNull ItemStack item, @NotNull UUID uuid) {
         var subSlot = getCurrent(slot);
         if (subSlot == null) return;
         this.inventory.setItem(slot, item);
@@ -197,6 +291,67 @@ public class View implements InventoryHolder {
         subSlot.storage = null;
     }
 
+    /**
+     * Get context value. Default context is {@link ContentBuilder.CONTEXT#DEFAULT}.
+     *
+     * @param context context
+     * @return value of the context
+     */
+    public int context(String context) {
+        var group = this.slotGroups.get(context);
+        return group.value;
+    }
+
+    /**
+     * Set context value. Will also call {@link View#write()} to update the new state to the inventory.
+     *
+     * @param context context
+     * @param contextValue new context value
+     */
+    public void context(String context, int contextValue) {
+        var group = this.slotGroups.get(context);
+        group.value = contextValue;
+        write();
+    }
+
+    /**
+     * Set next context value. Will also call {@link View#write()} to update the new state to the inventory.
+     *
+     * @param context context
+     */
+    public void next(String context) {
+        var group = this.slotGroups.get(context);
+        group.value++;
+        write();
+    }
+
+    public void prev(String context) {
+        var group = this.slotGroups.get(context);
+        group.value--;
+        write();
+    }
+
+    public boolean hasNext(String context) {
+        var group = this.slotGroups.get(context);
+        for (var slot : group.slots.values()) {
+            if (slot.slotMap.containsKey(group.value + 1)) return true;
+        }
+        return false;
+    }
+
+    public boolean hasPrev(String context) {
+        var group = this.slotGroups.get(context);
+        for (var slot : group.slots.values()) {
+            if (slot.slotMap.containsKey(group.value - 1)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Handling opening this view. This should never be manually run.
+     *
+     * @param event InventoryOpenEvent
+     */
     @ApiStatus.Internal
     public void onOpen(InventoryOpenEvent event) {
         if (whitelisted && whitelist.contains(event.getPlayer().getUniqueId())) event.setCancelled(true);
@@ -210,6 +365,11 @@ public class View implements InventoryHolder {
         }
     }
 
+    /**
+     * Handling closing this view. This should never be manually run.
+     *
+     * @param event InventoryOpenEvent
+     */
     @ApiStatus.Internal
     public void onClose(InventoryCloseEvent event) {
         // return slots with storage and return flag
@@ -242,6 +402,10 @@ public class View implements InventoryHolder {
         5. all checks passed -> all actions
      */
 
+    /**
+     * Handling a click in this view. This should never be manually run.
+     * @param event InventoryClickEvent
+     */
     @ApiStatus.Internal
     public void onClick(InventoryClickEvent event) {
 
@@ -289,7 +453,7 @@ public class View implements InventoryHolder {
             // placing
             case PLACE_ALL, PLACE_ONE, PLACE_SOME -> {
                 // wrong kind of item
-                if (slot.requirement != null && !slot.requirement.run(event.getCursor())) event.setCancelled(true);
+                if (slot.requirement != null && !slot.requirement.isAllowed(event.getCursor())) event.setCancelled(true);
 
                 // no placing
                 else if (slot.preventPlace) event.setCancelled(true);
@@ -322,7 +486,7 @@ public class View implements InventoryHolder {
             // swapping (both place and pick up)
             case SWAP_WITH_CURSOR -> {
 
-                if (slot.requirement != null && !slot.requirement.run(event.getCursor())) event.setCancelled(true);
+                if (slot.requirement != null && !slot.requirement.isAllowed(event.getCursor())) event.setCancelled(true);
                 else if (slot.preventPlace) event.setCancelled(true);
                 else if (slot.preventTake && slot.storage != null) event.setCancelled(true);
 
@@ -333,9 +497,7 @@ public class View implements InventoryHolder {
 
                     if (!event.isCancelled()) {
                         slot.storage = event.getWhoClicked().getUniqueId();
-                        Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(View.class), () -> {
-                            event.getWhoClicked().setItemOnCursor(ItemStack.empty());
-                        });
+                        Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(View.class), () -> event.getWhoClicked().setItemOnCursor(ItemStack.empty()));
                     }
                 } else {
                     if (slot.preventModification) event.setCancelled(true);
@@ -352,7 +514,7 @@ public class View implements InventoryHolder {
                     var replacement = event.getHotbarButton() == -1
                         ? event.getWhoClicked().getInventory().getItemInMainHand()
                         : event.getWhoClicked().getInventory().getItem(event.getHotbarButton());
-                    if (replacement != null && !replacement.isEmpty() && !slot.requirement.run(replacement)) {
+                    if (replacement != null && !replacement.isEmpty() && !slot.requirement.isAllowed(replacement)) {
                         event.setCancelled(true);
                         return;
                     }
@@ -655,7 +817,7 @@ public class View implements InventoryHolder {
         // return if something else canceled event
         if (event.isCancelled()) return;
 
-        // run default click action
+        // isAllowed default click action
         if (this.onClick != null) this.onClick.run(event);
         if (event.isCancelled()) return;
 
@@ -672,7 +834,7 @@ public class View implements InventoryHolder {
 
         var applicableSlots = slotMap.entrySet().stream().filter(e -> {
             var slot = e.getValue();
-            if (slot.requirement != null && !slot.requirement.run(transferStack)) return false;
+            if (slot.requirement != null && !slot.requirement.isAllowed(transferStack)) return false;
             if (slot.preventPlace || slot.preventModification) return false;
             if (slot.action != null) {
                 slot.action.run(event);
@@ -714,7 +876,7 @@ public class View implements InventoryHolder {
     }
 
     /**
-     * Custom drag functionality
+     * Handle dragging inside views. This should never be manually run.
      * @param event drag event
      */
     @ApiStatus.Internal
@@ -731,7 +893,7 @@ public class View implements InventoryHolder {
             if (event.getView().getTopInventory().equals(slotInv)) {
                 var subSlot = getCurrent(event.getView().convertSlot(slot));
                 if (subSlot != null) {
-                    if (subSlot.requirement != null && !subSlot.requirement.run(event.getOldCursor())) continue;
+                    if (subSlot.requirement != null && !subSlot.requirement.isAllowed(event.getOldCursor())) continue;
                     if (subSlot.preventPlace || subSlot.preventModification) continue;
                 }
             }
@@ -768,41 +930,121 @@ public class View implements InventoryHolder {
         update();
     }
 
-    public static class ContentBuilder {
-        public final View view;
-        public final String context;
-        public final int value;
-        public final HumanEntity player;
+    /**
+     * Create new ContentBuilder.
+     *
+     * @param view view to place content to
+     * @param context context to place the content to
+     * @param contextValue value of the context to place the content to
+     * @param player player
+     */
+    public record ContentBuilder(View view, String context, int contextValue, HumanEntity player) {
 
-        public ContentBuilder(@NotNull View view, @NotNull String context, int value, @Nullable HumanEntity player) {
-            this.view = view;
-            this.context = context;
-            this.value = value;
-            this.player = player;
+        public static class CONTEXT {
+
+            /**
+             * Default context when creating new inventory.
+             */
+            public static final String DEFAULT = "default";
+
+            /**
+             * Global context.
+             * Will always be written from contextValue 0,
+             * so items in this context will always be displayed.
+             */
+            public static final String GLOBAL = "global";
         }
 
+        /**
+         * Create new list.
+         * @param items items in this list
+         * @param context context builder for this list
+         * @param pattern pattern of the slots
+         * @param <T> type of values in this list
+         */
         public <T> void patternList(@NotNull List<T> items, @NotNull ListBuildContext<T> context, String... pattern) {
             patternList(items, null, context, pattern);
         }
+
+        /**
+         * Create new list.
+         * @param items items in this list
+         * @param comparator comparator for sorting the list
+         * @param context context builder for this list
+         * @param pattern pattern of the slots
+         * @param <T> type of values in this list
+         */
         public <T> void patternList(@NotNull List<T> items, @Nullable Comparator<T> comparator, @NotNull ListBuildContext<T> context, String... pattern) {
             list(items, comparator, context, getSlotsFromPattern(pattern));
         }
 
+        /**
+         * Create new list.
+         * @param items items in this list
+         * @param context context builder for this list
+         * @param row of slot
+         * @param column of slot
+         * @param <T> type of values in this list
+         */
         public <T> void list(@NotNull List<T> items, int row, int column, @NotNull ListBuildContext<T> context) {
             list(items, context, new SlotCoordinate(row, column));
         }
+
+        /**
+         * Create new list.
+         * @param items items in this list
+         * @param comparator comparator for sorting the list
+         * @param context context builder for this list
+         * @param row of slot
+         * @param column of slot
+         * @param <T> type of values in this list
+         */
         public <T> void list(@NotNull List<T> items, @Nullable Comparator<T> comparator, int row, int column, @NotNull ListBuildContext<T> context) {
             list(items, comparator, context, new SlotCoordinate(row, column));
         }
+
+        /**
+         * Create new list.
+         * @param items items in this list
+         * @param context context builder for this list
+         * @param coordinate coordinate of slot
+         * @param <T> type of values in this list
+         */
         public <T> void list(@NotNull List<T> items, ListBuildContext<T> context, @NotNull SlotCoordinate coordinate) {
             list(items, null, context, coordinate.asSlot());
         }
+
+        /**
+         * Create new list.
+         * @param items items in this list
+         * @param comparator comparator for sorting the list
+         * @param context context builder for this list
+         * @param coordinate coordinate of slot
+         * @param <T> type of values in this list
+         */
         public <T> void list(@NotNull List<T> items, @Nullable Comparator<T> comparator, ListBuildContext<T> context, @NotNull SlotCoordinate coordinate) {
             list(items, comparator, context, coordinate.asSlot());
         }
+
+        /**
+         * Create new list.
+         * @param items items in this list
+         * @param context context builder for this list
+         * @param slots slots to place this list to
+         * @param <T> type of values in this list
+         */
         public <T> void list(@NotNull List<T> items, @NotNull ListBuildContext<T> context, int... slots) {
             list(items, null, context, slots);
         }
+
+        /**
+         * Create new list.
+         * @param items items in this list
+         * @param comparator comparator for sorting the list
+         * @param context context builder for this list
+         * @param slots slots to place this list to
+         * @param <T> type of values in this list
+         */
         public <T> void list(@NotNull List<T> items, @Nullable Comparator<T> comparator, @NotNull ListBuildContext<T> context, int... slots) {
             if (slots.length == 0) return;
 
@@ -810,7 +1052,7 @@ public class View implements InventoryHolder {
             var sorted = comparator == null ? items : items.stream().sorted(comparator).toList();
 
             int slotVal = 0;
-            int contextVal = this.value;
+            int contextVal = this.contextValue;
             for (T item : sorted) {
                 if (slotVal > slots.length) {
                     slotVal = 0;
@@ -841,7 +1083,7 @@ public class View implements InventoryHolder {
          * @return builder
          */
         public Slot.SubSlot.Builder pattern(String... pattern) {
-            return new Slot.SubSlot.Builder(this.view, this.context, this.value, getSlotsFromPattern(pattern));
+            return new Slot.SubSlot.Builder(this.view, this.context, this.contextValue, getSlotsFromPattern(pattern));
         }
 
         private int[] getSlotsFromPattern(String... pattern) {
@@ -869,30 +1111,170 @@ public class View implements InventoryHolder {
             return slots;
         }
 
+        /**
+         * Slot coordinate
+         *
+         * @param row row
+         * @param column column
+         */
         public record SlotCoordinate(int row, int column) {
+            /**
+             * Get this coordinate as a slot.
+             * @return slot
+             */
             public int asSlot() {
                 return row * 9 + column;
             }
+
+            /**
+             * Create new coordinate from row and column
+             * @param row row
+             * @param column column
+             * @return new SlotCoordinate
+             */
             public static SlotCoordinate of(int row, int column) {
                 return new SlotCoordinate(row, column);
             }
         }
 
+        /**
+         * Create a builder for slot in coordinates
+         *
+         * @param row row
+         * @param column column
+         * @return new SubSlot builder
+         */
         public Slot.SubSlot.Builder setCoordinate(int row, int column) {
             return set(new SlotCoordinate(row, column));
         }
+
+        /**
+         * Create a builder for slot in coordinates
+         *
+         * @param coordinate coordinates of a slot
+         * @return new SubSlot builder
+         */
         public Slot.SubSlot.Builder set(@NotNull SlotCoordinate coordinate) {
-            return set(coordinate.asSlot());
-        }
+                return set(coordinate.asSlot());
+            }
+
+        /**
+         * Create a builder for slots.
+         *
+         * @param slots slots
+         * @return new SubSlot builder
+         */
         public Slot.SubSlot.Builder set(int... slots) {
-            return new Slot.SubSlot.Builder(this.view, this.context, this.value, slots);
+            return new Slot.SubSlot.Builder(this.view, this.context, this.contextValue, slots);
         }
 
-        public void subContent(int value, @NotNull InventoryContent content) {
-            content.run(new ContentBuilder(view, this.context, value, this.player));
+        /**
+         * Create new ContentBuilder with different context value
+         * @param contextValue new context value
+         * @param content content
+         */
+        public void context(int contextValue, @NotNull InventoryContent content) {
+            content.run(new ContentBuilder(view, this.context, contextValue, this.player));
         }
-        public void subContent(String context, int value, @NotNull InventoryContent content) {
-            content.run(new ContentBuilder(view, context, value, this.player));
+
+        /**
+         * Create new ContentBuilder with different context and context value
+         * @param context new context
+         * @param contextValue new context value
+         * @param content content
+         */
+        public void context(@NotNull String context, int contextValue, @NotNull InventoryContent content) {
+            content.run(new ContentBuilder(view, context, contextValue, this.player));
+        }
+
+
+        /*
+            Modules
+         */
+
+        /**
+         * Create a border to slots.
+         * <br><br>
+         * Is shortened version of:
+         * <pre>
+         *  context.set(slots)
+         *      .material(material)
+         *      .setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hideTooltip(true).build())
+         *      .preventModification()
+         *      .build();
+         * </pre>
+         *
+         * @param material material of border
+         * @param slots slots to place border in
+         */
+        @SuppressWarnings("UnstableApiUsage")
+        public void border(@NotNull Material material, int... slots) {
+            set(slots)
+                .material(material)
+                .setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hideTooltip(true).build())
+                .preventModification()
+                .build();
+        }
+
+        /**
+         * Create a border to a pattern.
+         * <br><br>
+         * use "#" to signal item, and any other character to signal no item.
+         * <br><br>
+         * Is shortened version of:
+         * <pre>
+         *  context.pattern(pattern)
+         *      .material(material)
+         *      .setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hideTooltip(true).build())
+         *      .preventModification()
+         *      .build();
+         * </pre>
+         *
+         * @param material material of border
+         * @param pattern pattern the border is placed to
+         */
+        public void border(@NotNull Material material, String... pattern) {
+            border(material, getSlotsFromPattern(pattern));
+        }
+
+        /**
+         * Will display item created with nextPageContext if pageContext has items in next contextValue. If not, noNextPageContext will be displayed.
+         * <br><br>
+         * Item will be displayed in {@link CONTEXT#GLOBAL}, so it will be always visible.
+         * <br><br>
+         * Action <code>view.next(pageContext)</code> will be automatically added. If you want to create your own action, please remember to use {@link View#next(String)} again to make sure page is turned correctly.
+         *
+         * @param pageContext context to read from
+         * @param nextPageContext next page item
+         * @param noNextPageContext no next page item
+         * @param slots slot(s) to place to
+         */
+        public void nextPage(@NotNull String pageContext, @NotNull BuildContext nextPageContext, @NotNull BuildContext noNextPageContext, int... slots) {
+            if (this.view().hasNext(pageContext)) {
+                nextPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.GLOBAL, 0, slots).action(_ -> this.view.next(pageContext)));
+            } else {
+                noNextPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.GLOBAL, 0, slots));
+            }
+        }
+
+        /**
+         * Will display item created with prevPageContext if pageContext has items in previous contextValue. If not, noPrevPageContext will be displayed.
+         * <br><br>
+         * Item will be displayed in {@link CONTEXT#GLOBAL}, so it will be always visible.
+         * <br><br>
+         * Action <code>view.prev(pageContext)</code> will be automatically added. If you want to create your own action, please remember to use {@link View#prev(String)} again to make sure page is turned correctly.
+         *
+         * @param pageContext context to read from
+         * @param prevPageContext next page item
+         * @param noPrevPageContext no next page item
+         * @param slots slot(s) to place to
+         */
+        public void prevPage(@NotNull String pageContext, @NotNull BuildContext prevPageContext, @NotNull BuildContext noPrevPageContext, int... slots) {
+            if (this.view().hasPrev(pageContext)) {
+                prevPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.GLOBAL, 0, slots).action(_ -> this.view.prev(pageContext)));
+            } else {
+                noPrevPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.GLOBAL, 0, slots));
+            }
         }
 
     }
