@@ -29,6 +29,20 @@ public class SharedInventory extends AbstractInventory {
     }
 
     /**
+     * Reload this inventory.
+     * Will delete all contents in the inventory that is player placed,
+     * and re-run all builder functions.
+     * <br><br>
+     * Useful for updating inventory if builder functions give different results depending on a state.
+     * <br><br>
+     * If nobody is viewing the inventory, the reload will happen the next time someone opens the inventory.
+     */
+    @Override
+    public void reload() {
+        this.view.reload();
+    }
+
+    /**
      * Get view associated with this inventory.
      * As this inventory is shared, will always return the same view, even if player is null.
      *

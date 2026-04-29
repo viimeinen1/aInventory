@@ -84,4 +84,10 @@ public class README_examples {
                 .build();
 
         }).build();
+
+    Gui<String> gui = Gui.from(builder -> {
+        builder.set("view1").build();
+        builder.set("view2").build();
+        builder.set("view3").build();
+    });
 }

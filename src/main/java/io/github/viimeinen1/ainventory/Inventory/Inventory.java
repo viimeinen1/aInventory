@@ -30,6 +30,22 @@ public class Inventory extends AbstractInventory {
     }
 
     /**
+     * Reload this inventory.
+     * Will delete all contents in the inventory that is player placed,
+     * and re-run all builder functions.
+     * <br><br>
+     * Useful for updating inventory if builder functions give different results depending on a state.
+     * <br><br>
+     * If nobody is viewing the inventory, the reload will happen the next time someone opens the inventory.
+     * <br><br>
+     * To reload only single player's view, use {@link Inventory#getView(HumanEntity)} and reload the view itself.
+     */
+    @Override
+    public void reload() {
+        this.views.values().forEach(View::reload);
+    }
+
+    /**
      * get view associated with this player. As this inventory type is not shared, it always excepts a player. Giving <code>null</code> as a parameter will throw an error.
      *
      * @throws IllegalArgumentException if player is null, since this type of inventory always excepts player.

@@ -456,6 +456,7 @@ public class Slot {
              * Value associated with this slot.
              */
             public final T value;
+            public final int index;
 
             /**
              * Create new valued slot builder.
@@ -466,9 +467,10 @@ public class Slot {
              * @param contextValue context value this builder will be applied to
              * @param slots slots this builder will be applied to
              */
-            public ValuedBuilder(View view, T value, String context, int contextValue, int... slots) {
+            public ValuedBuilder(View view, T value, String context, int contextValue, int index, int... slots) {
                 super(view, context, contextValue, slots);
                 this.value = value;
+                this.index = index;
             }
         }
     }

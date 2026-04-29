@@ -63,6 +63,8 @@ public abstract class AbstractInventory {
      */
     public abstract @NotNull View getView(@Nullable HumanEntity player);
 
+    public abstract void reload();
+
     /**
      * Open a view to this inventory for player.
      *

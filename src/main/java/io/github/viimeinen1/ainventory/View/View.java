@@ -93,6 +93,8 @@ public class View implements InventoryHolder {
     private final Set<UUID> whitelist;
     private final HumanEntity player;
 
+    private boolean reloadOnNextOpen = false;
+
     /**
      * Create new view
      *
@@ -239,7 +241,8 @@ public class View implements InventoryHolder {
      * @param player player
      */
     public void open(HumanEntity player) {
-        write();
+        if (reloadOnNextOpen) applyReload();
+        else write();
         player.openInventory(this.inventory);
     }
 
@@ -249,10 +252,24 @@ public class View implements InventoryHolder {
      * and re-run all builder functions.
      * <br><br>
      * Useful for updating inventory if builder functions give different results depending on a state.
+     * <br><br>
+     * If nobody is viewing the inventory, the reload will happen the next time someone opens the inventory.
      */
     public void reload() {
+        if (this.inventory.getViewers().isEmpty()) {
+            this.reloadOnNextOpen = true;
+            return;
+        }
+        applyReload();
+    }
+
+    /**
+     * Reload functionality
+     */
+    private void applyReload() {
         this.getInventory().clear();
         this.slotGroups.clear();
+        this.reloadOnNextOpen = false;
 
         content.run(new View.ContentBuilder(
             this,
@@ -1051,6 +1068,7 @@ public class View implements InventoryHolder {
             // sort items
             var sorted = comparator == null ? items : items.stream().sorted(comparator).toList();
 
+            int index = 0;
             int slotVal = 0;
             int contextVal = this.contextValue;
             for (T item : sorted) {
@@ -1061,7 +1079,8 @@ public class View implements InventoryHolder {
                 int slot = slots[slotVal];
                 slotVal++;
 
-                context.run(new Slot.SubSlot.ValuedBuilder<>(this.view, item, this.context, contextVal, slot));
+                context.run(new Slot.SubSlot.ValuedBuilder<>(this.view, item, this.context, contextVal, index, slot));
+                index++;
             }
         }
 
