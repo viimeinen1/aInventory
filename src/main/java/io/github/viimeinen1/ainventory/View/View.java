@@ -1,5 +1,6 @@
 package io.github.viimeinen1.ainventory.View;
 
+import io.github.viimeinen1.ainventory.Animation.Animation;
 import io.github.viimeinen1.ainventory.Interfaces.*;
 import io.github.viimeinen1.ainventory.Inventory.AbstractInventory;
 import io.github.viimeinen1.ainventory.Slot.Slot;
@@ -93,6 +94,8 @@ public class View implements InventoryHolder {
     private final Set<UUID> whitelist;
     private final HumanEntity player;
 
+    private final HashMap<String, Animation> animations = new HashMap<>();
+
     private boolean reloadOnNextOpen = false;
 
     /**
@@ -144,6 +147,16 @@ public class View implements InventoryHolder {
     @Override
     public @NotNull org.bukkit.inventory.Inventory getInventory() {
         return inventory;
+    }
+
+    public void addAnimation(String id, Animation animation) {
+        animations.put(id, animation);
+    }
+
+    public void runAnimation(String id) {
+        var animation = animations.get(id);
+        if (animation == null) return;
+        animation.run(this.inventory, this::write);
     }
 
     /**
@@ -970,6 +983,16 @@ public class View implements InventoryHolder {
              * so items in this context will always be displayed.
              */
             public static final String GLOBAL = "global";
+        }
+
+        /**
+         * Create new animation.
+         *
+         * @param id id of animation
+         * @return animation builder
+         */
+        public Animation.Builder animation(@NotNull String id) {
+            return new Animation.Builder(id, view);
         }
 
         /**

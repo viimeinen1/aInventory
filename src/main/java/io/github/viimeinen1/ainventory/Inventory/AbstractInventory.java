@@ -63,6 +63,15 @@ public abstract class AbstractInventory {
      */
     public abstract @NotNull View getView(@Nullable HumanEntity player);
 
+    /**
+     * Reload this inventory.
+     * Will delete all contents in the inventory that is player placed,
+     * and re-run all builder functions.
+     * <br><br>
+     * Useful for updating inventory if builder functions give different results depending on a state.
+     * <br><br>
+     * If nobody is viewing the inventory, the reload will happen the next time someone opens the inventory.
+     */
     public abstract void reload();
 
     /**

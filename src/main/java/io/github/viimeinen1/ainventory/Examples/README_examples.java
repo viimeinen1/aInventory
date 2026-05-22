@@ -5,6 +5,7 @@ import io.github.viimeinen1.ainventory.Inventory.AbstractInventory;
 import io.github.viimeinen1.ainventory.Inventory.Inventory;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 import java.util.UUID;
@@ -81,6 +82,28 @@ public class README_examples {
                 "#.......#",
                 "#########"
             ).material(Material.BLACK_STAINED_GLASS_PANE)
+                .build();
+
+            // create animation
+            c.animation("test")
+                .item("#", ItemStack.of(Material.GREEN_STAINED_GLASS_PANE))
+                .item(".", ItemStack.of(Material.RED_STAINED_GLASS_PANE))
+                .frame(
+                    "#########",
+                    "#########",
+                    "#########"
+                )
+                .frame(
+                    ".........",
+                    ".........",
+                    "........."
+                )
+                .frame(
+                    "#########",
+                    "#########",
+                    "#########"
+                )
+                .callback(() -> c.player().sendPlainMessage("Hello, World!"))
                 .build();
 
         }).build();
