@@ -77,7 +77,7 @@ Inventory inventory = Inventory.builder()
         .build();
 
 /*
-    All options are optional, even this is a valid inventory (tough with no content)
+    All options are optional, instead defaults are used. Even this is a valid inventory (though with no content)
  */
 Inventory emptyInventory = Inventory.builder().build();
 ```

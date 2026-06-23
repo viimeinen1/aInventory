@@ -43,7 +43,7 @@ public class Animation {
      */
     public void run(Inventory inventory, Runnable callback) {
         if (frames.isEmpty()) return;
-        var queue = new ArrayDeque<Frame>(this.frames);
+        var queue = new ArrayDeque<>(this.frames);
         var plugin = JavaPlugin.getProvidingPlugin(Animation.class);
 
         Bukkit.getScheduler().runTaskTimer(plugin, task -> {

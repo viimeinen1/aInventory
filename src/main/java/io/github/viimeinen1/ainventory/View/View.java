@@ -95,6 +95,7 @@ public class View implements InventoryHolder {
     private final HumanEntity player;
 
     private final HashMap<String, Animation> animations = new HashMap<>();
+    private Animation currentAnimation = null;
 
     private boolean reloadOnNextOpen = false;
 
@@ -157,6 +158,8 @@ public class View implements InventoryHolder {
         var animation = animations.get(id);
         if (animation == null) return;
         animation.run(this.inventory, this::write);
+
+        currentAnimation = animation;
     }
 
     /**
@@ -322,6 +325,21 @@ public class View implements InventoryHolder {
     }
 
     /**
+     * Change storage recipient and/or item. If null is given to item or uuid, the previous value will be used.
+     *
+     * @param slot slot to change
+     * @param item ItemStack or null
+     * @param uuid UUID or null
+     */
+    public void changeStorage(int slot, @Nullable ItemStack item, @Nullable UUID uuid) {
+        var subSlot = getCurrent(slot);
+        if (subSlot == null) return;
+
+        if (item != null) this.inventory.setItem(slot, item);
+        if (uuid != null) subSlot.storage = uuid;
+    }
+
+    /**
      * Get context value. Default context is {@link ContentBuilder.CONTEXT#DEFAULT}.
      *
      * @param context context
@@ -441,6 +459,9 @@ public class View implements InventoryHolder {
 
         // stop if event was canceled by some other plugin
         if (event.isCancelled()) return;
+
+        // animation
+        if (currentAnimation != null && !currentAnimation.allowClickPassthrough) event.setCancelled(true);
 
         // whitelist
         if (whitelisted && !whitelist.contains(event.getWhoClicked().getUniqueId())) {
