@@ -1,26 +1,26 @@
 group = "io.github.viimeinen1.ainventory"
-version = "3.2.1"
+version = "3.2.2"
 description = "Inventory GUI library"
 
 plugins {
-    id("java-library")
-    id("com.vanniktech.maven.publish") version "0.34.0"
+  id("java")
+  id("com.vanniktech.maven.publish") version "0.34.0"
 }
 
 repositories {
-    mavenLocal()
-    maven {
-        name = "papermc"
-        url = uri("https://repo.papermc.io/repository/maven-public/") 
-    }
+  mavenLocal()
+  maven {
+      name = "papermc"
+      url = uri("https://repo.papermc.io/repository/maven-public/")
+  }
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+  compileOnly("io.papermc.paper:paper-api:26.2.build.+")
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+  toolchain.languageVersion.set(JavaLanguageVersion.of(25))
 }
 
 mavenPublishing {

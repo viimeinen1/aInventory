@@ -3,6 +3,7 @@ package io.github.viimeinen1.ainventory.View;
 import io.github.viimeinen1.ainventory.Animation.Animation;
 import io.github.viimeinen1.ainventory.Interfaces.*;
 import io.github.viimeinen1.ainventory.Inventory.AbstractInventory;
+import io.github.viimeinen1.ainventory.Listeners.InventoryListener;
 import io.github.viimeinen1.ainventory.Slot.Slot;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.TooltipDisplay;
@@ -136,6 +137,9 @@ public class View implements InventoryHolder {
         this.player = player;
 
         this.inventory = Bukkit.createInventory(this, size.size(), title);
+
+        // try initializing listener
+        InventoryListener.initializeListener();
 
         reload();
     }

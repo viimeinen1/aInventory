@@ -23,11 +23,10 @@ public class InventoryListener implements Listener {
      * Without initializing the listener, the click functions will not work.
      * <br><br>
      * Will fail silently if this listener was already initialized
-     *
-     * @param plugin {@link JavaPlugin} that the listener will be listed for.
      */
-    public static void initializeListener(@NotNull JavaPlugin plugin) {
+    public static void initializeListener() {
         if (initialized) return;
+        var plugin = JavaPlugin.getProvidingPlugin(InventoryListener.class);
         plugin.getServer().getPluginManager().registerEvents(new InventoryListener(), plugin);
         initialized = true;
     }

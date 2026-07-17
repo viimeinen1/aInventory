@@ -52,8 +52,6 @@ public abstract class AbstractInventory {
      * @param inventoryBuilder inventory builder
      */
     public AbstractInventory(Builder inventoryBuilder) {
-        var plugin = JavaPlugin.getProvidingPlugin(AbstractInventory.class);
-        InventoryListener.initializeListener(plugin);
         this.inventoryBuilder = inventoryBuilder;
     }
 

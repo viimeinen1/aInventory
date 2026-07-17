@@ -74,7 +74,15 @@ public class README_examples {
 
             // add new item to slot 10
             c.set(10)
+                .material(Material.WOODEN_PICKAXE)
+                .action(event -> event.getWhoClicked().sendMessage("You clicked wooden pickaxe!"))
                 .build();
+
+            c.border(Material.GRAY_STAINED_GLASS_PANE,
+                "#########",
+                "#.......#",
+                "#########"
+            );
 
             // create border
             c.pattern(
@@ -82,6 +90,7 @@ public class README_examples {
                 "#.......#",
                 "#########"
             ).material(Material.BLACK_STAINED_GLASS_PANE)
+                .preventModification()
                 .build();
 
             // create animation
@@ -104,6 +113,10 @@ public class README_examples {
                     "#########"
                 )
                 .callback(() -> c.player().sendPlainMessage("Hello, World!"))
+                .build();
+
+            c.set(11)
+                .returnOnClose()
                 .build();
 
         }).build();
