@@ -891,16 +891,9 @@ public class View implements InventoryHolder {
             var slot = e.getValue();
             if (slot.requirement != null && !slot.requirement.isAllowed(transferStack)) return false;
             if (slot.preventPlace || slot.preventModification) return false;
-            if (slot.action != null) {
-                slot.action.run(event);
-                if (event.isCancelled()) {
-                    event.setCancelled(false);
-                    return false;
-                }
-            }
             if (slot.storage != null) {
                 var currentItem = destinationInventory.getItem(e.getKey());
-                return currentItem != null && transferStack.isSimilar(currentItem) && currentItem.getAmount() < currentItem.getMaxStackSize();
+                return currentItem == null || currentItem.isSimilar(transferStack) && currentItem.getAmount() < currentItem.getMaxStackSize();
             }
             return true;
         }).map(Map.Entry::getKey).toList();
@@ -910,6 +903,16 @@ public class View implements InventoryHolder {
         for (var slot : applicableSlots) {
             if (remain <= 0) {break;}
             ItemStack curr = inventory.getItem(slot);
+
+            // trigger action right before setting the item
+            if (slotMap.get(slot).action != null) {
+                slotMap.get(slot).action.run(event);
+                if (event.isCancelled()) {
+                    event.setCancelled(false);
+                    continue; // don't add if action doesn't pass
+                }
+            }
+
             int addition;
             if (curr == null || curr.isEmpty()) {
                 addition = Math.min(inventory.getMaxStackSize(), remain);
@@ -919,6 +922,7 @@ public class View implements InventoryHolder {
                 addition = Math.min(curr.getMaxStackSize() - curr.getAmount(), remain);
                 curr.add(addition);
             }
+
             remain -= addition;
         }
 
@@ -926,7 +930,7 @@ public class View implements InventoryHolder {
         if (remain < 1) event.getView().getBottomInventory().clear(event.getSlot());
         else event.getView().getBottomInventory().setItem(event.getSlot(), transferStack.asQuantity(remain));
 
-        event.setCancelled(true); // finally cancel event fo good
+        event.setCancelled(true); // finally cancel event for good
         update(); // update for viewers
     }
 
