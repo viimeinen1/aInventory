@@ -29,6 +29,8 @@ import java.util.*;
  */
 public class View implements InventoryHolder {
 
+    // TODO keep list of what context values are possible
+
     /**
      * Group of slots with a context.
      */
@@ -44,10 +46,13 @@ public class View implements InventoryHolder {
          */
         public int value;
 
+        public final List<Integer> possibleValues = new ArrayList<>();
+
         /**
          * Slots in this group, and their position in the view.
          */
         public final HashMap<Integer, Slot> slots = new HashMap<>();
+
 
         /**
          * Create new SlotGroup. Default context value is 0.
@@ -1388,10 +1393,14 @@ public class View implements InventoryHolder {
          * @param slots slot(s) to place to
          */
         public void nextPage(@NotNull String pageContext, @NotNull BuildContext nextPageContext, @NotNull BuildContext noNextPageContext, int... slots) {
-            if (this.view().hasNext(pageContext)) {
-                nextPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.GLOBAL, 0, slots).action(_ -> this.view.next(pageContext)));
-            } else {
-                noNextPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.GLOBAL, 0, slots));
+            var group = this.view().getGroup(pageContext);
+            if (group == null) noNextPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.DEFAULT, 0, slots));
+
+            int i = 0;
+            while (view().hasContextValue(pageContext, i)) {
+                if (!view().hasContextValue(pageContext, i + 1)) noNextPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, i, slots));
+                else nextPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, i, slots).action(_ -> this.view.next(pageContext)));
+                i++;
             }
         }
 
@@ -1408,10 +1417,14 @@ public class View implements InventoryHolder {
          * @param slots slot(s) to place to
          */
         public void prevPage(@NotNull String pageContext, @NotNull BuildContext prevPageContext, @NotNull BuildContext noPrevPageContext, int... slots) {
-            if (this.view().hasPrev(pageContext)) {
-                prevPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.GLOBAL, 0, slots).action(_ -> this.view.prev(pageContext)));
-            } else {
-                noPrevPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.GLOBAL, 0, slots));
+            var group = this.view().getGroup(pageContext);
+            if (group == null) noPrevPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.DEFAULT, 0, slots));
+
+            int i = 0;
+            while (view().hasContextValue(pageContext, i)) {
+                if (i == 0) noPrevPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, i, slots));
+                else prevPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, i, slots).action(_ -> this.view.prev(pageContext)));
+                i++;
             }
         }
 
