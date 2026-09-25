@@ -1053,9 +1053,6 @@ public class View implements InventoryHolder {
             if (finalRemain <= 0) event.getWhoClicked().setItemOnCursor(null);
             else event.getWhoClicked().setItemOnCursor(oldCursor.asQuantity(finalRemain));
         });
-
-        event.setResult(Event.Result.DENY);
-
         update();
     }
 
