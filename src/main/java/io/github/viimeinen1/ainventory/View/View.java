@@ -567,7 +567,7 @@ public class View implements InventoryHolder {
             case HOTBAR_SWAP -> {
                 if (slot.requirement != null) {
                     var replacement = event.getHotbarButton() == -1
-                        ? event.getWhoClicked().getInventory().getItemInMainHand()
+                        ? event.getWhoClicked().getInventory().getItemInOffHand()
                         : event.getWhoClicked().getInventory().getItem(event.getHotbarButton());
                     if (replacement != null && !replacement.isEmpty() && !slot.requirement.isAllowed(replacement)) {
                         event.setCancelled(true);

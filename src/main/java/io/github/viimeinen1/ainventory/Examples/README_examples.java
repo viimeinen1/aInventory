@@ -32,7 +32,6 @@ public class README_examples {
         // create custom functionality on close
         .close(event -> event.getPlayer().sendMessage("You closed inventory!"))
 
-
         // create requirements for the inventory
         // only players who pass this check will be able to use this inventory
         .require(pl -> pl.isOp() || pl.hasPermission("example.admin"))
