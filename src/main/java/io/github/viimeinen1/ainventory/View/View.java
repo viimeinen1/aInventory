@@ -12,6 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -218,16 +219,16 @@ public class View implements InventoryHolder {
     }
 
     /**
-     * Write current state to inventory
+     * Write current state to inventory. Will not delete items in storage, only redraw the inventory state.<br>
+     * Will call {@link View#update()} to update view to its viewers.
      */
     public void write() {
         write(this.inventory);
     }
 
     /**
-     * Write current state to inventory.
+     * Write current state to inventory. Will not delete items in storage, only redraw the inventory state.<br>
      * Will call {@link View#update()} to update view to its viewers.
-     *
      * @param inventory inventory to write to
      */
     public void write(org.bukkit.inventory.Inventory inventory) {
@@ -351,6 +352,7 @@ public class View implements InventoryHolder {
      */
     public int context(String context) {
         var group = this.slotGroups.get(context);
+        if (group == null) return 0;
         return group.value;
     }
 
@@ -362,39 +364,96 @@ public class View implements InventoryHolder {
      */
     public void context(String context, int contextValue) {
         var group = this.slotGroups.get(context);
+        if (group == null) return;
         group.value = contextValue;
         write();
     }
 
     /**
-     * Set next context value. Will also call {@link View#write()} to update the new state to the inventory.
-     *
+     * Add 1 to context value if able to. Will also call {@link View#write()} to update the new state to the inventory.
      * @param context context
      */
-    public void next(String context) {
+    public void nextIfExists(String context) {
+        if (!hasNext(context)) return;
         var group = this.slotGroups.get(context);
+        if (group == null) return;
         group.value++;
         write();
     }
 
-    public void prev(String context) {
+    /**
+     * Add 1 to context value. Will also call {@link View#write()} to update the new state to the inventory.
+     * @param context context
+     */
+    public void next(String context) {
         var group = this.slotGroups.get(context);
+        if (group == null) return;
+        group.value++;
+        write();
+    }
+
+    /**
+     * Remove 1 from context value if able to. Will also call {@link View#write()} to update the new state to the inventory.
+     * @param context context
+     */
+    public void prevIfExists(String context) {
+        if (!hasPrev(context)) return;
+        var group = this.slotGroups.get(context);
+        if (group == null) return;
         group.value--;
         write();
     }
 
+    /**
+     * Remove 1 from context value. Will also call {@link View#write()} to update the new state to the inventory.
+     * @param context context
+     */
+    public void prev(String context) {
+        var group = this.slotGroups.get(context);
+        if (group == null) return;
+        group.value--;
+        write();
+    }
+
+    /**
+     * Check if there is something to display if we call {@link View#next(String)}.
+     * @param context context
+     * @return true if {@link View#next(String)} will display something.
+     */
     public boolean hasNext(String context) {
         var group = this.slotGroups.get(context);
+        if (group == null) return false;
         for (var slot : group.slots.values()) {
             if (slot.slotMap.containsKey(group.value + 1)) return true;
         }
         return false;
     }
 
+    /**
+     * Check if there is something to display if we call {@link View#prev(String)}.
+     * @param context context
+     * @return true if {@link View#prev(String)} will display something.
+     */
     public boolean hasPrev(String context) {
         var group = this.slotGroups.get(context);
+        if (group == null) return false;
         for (var slot : group.slots.values()) {
             if (slot.slotMap.containsKey(group.value - 1)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check if there is something to display at this context value.
+     * @param context context
+     * @param value value
+     * @return true if {@link View#context(String, int)} with value `value` will display something.
+     */
+    public boolean hasContextValue(String context, int value) {
+        var group = this.slotGroups.get(context);
+        if (group == null) return false;
+        for (var slot : group.slots.values()) {
+            if (slot.slotMap.containsKey(value)) return true;
         }
         return false;
     }
@@ -954,6 +1013,14 @@ public class View implements InventoryHolder {
                 if (subSlot != null) {
                     if (subSlot.requirement != null && !subSlot.requirement.isAllowed(event.getOldCursor())) continue;
                     if (subSlot.preventPlace || subSlot.preventModification) continue;
+                    // all slots after here should get added to
+                    if (subSlot.action != null) {
+                        var e = new InventoryClickEvent(event.getView(), InventoryType.SlotType.CONTAINER, slot, ClickType.UNKNOWN, InventoryAction.PLACE_SOME);
+                        subSlot.action.run(e);
+                        if (e.isCancelled()) {
+                            continue;
+                        }
+                    }
                 }
             }
             actualSlots.add(slot);
@@ -986,6 +1053,9 @@ public class View implements InventoryHolder {
             if (finalRemain <= 0) event.getWhoClicked().setItemOnCursor(null);
             else event.getWhoClicked().setItemOnCursor(oldCursor.asQuantity(finalRemain));
         });
+
+        event.setResult(Event.Result.DENY);
+
         update();
     }
 
@@ -1115,7 +1185,7 @@ public class View implements InventoryHolder {
          * @param <T> type of values in this list
          */
         public <T> void list(@NotNull List<T> items, @Nullable Comparator<T> comparator, @NotNull ListBuildContext<T> context, int... slots) {
-            if (slots.length == 0) return;
+            if (slots == null || slots.length == 0) return;
 
             // sort items
             var sorted = comparator == null ? items : items.stream().sorted(comparator).toList();
@@ -1124,7 +1194,7 @@ public class View implements InventoryHolder {
             int slotVal = 0;
             int contextVal = this.contextValue;
             for (T item : sorted) {
-                if (slotVal > slots.length) {
+                if (slotVal >= slots.length) {
                     slotVal = 0;
                     contextVal++;
                 }
