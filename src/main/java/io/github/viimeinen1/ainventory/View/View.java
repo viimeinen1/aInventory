@@ -29,8 +29,6 @@ import java.util.*;
  */
 public class View implements InventoryHolder {
 
-    // TODO keep list of what context values are possible
-
     /**
      * Group of slots with a context.
      */
@@ -46,6 +44,9 @@ public class View implements InventoryHolder {
          */
         public int value;
 
+        /**
+         * Context values that have something set to them.
+         */
         public final List<Integer> possibleValues = new ArrayList<>();
 
         /**
@@ -105,6 +106,8 @@ public class View implements InventoryHolder {
     private Animation currentAnimation = null;
 
     private boolean reloadOnNextOpen = false;
+
+    private final HashMap<UUID, ItemStack> pendingCursors = new HashMap<>();
 
     /**
      * Create new view
@@ -210,6 +213,24 @@ public class View implements InventoryHolder {
     }
 
     /**
+     * If something is already set to this slot, either in this context value or in any other context.
+     *
+     * @param slot slot
+     * @param context context
+     * @param contextValue context value
+     * @return true if the slot is set
+     */
+    private boolean isSet(int slot, String context, int contextValue) {
+        if (this.globalGroup.hasSlot(slot)) return true;
+        for (var group : this.slotGroups.values()) {
+            if (!group.hasSlot(slot)) continue;
+            if (!group.context.equals(context)) return true;
+            if (group.slots.get(slot).slotMap.containsKey(contextValue)) return true;
+        }
+        return false;
+    }
+
+    /**
      * Apply slots from SubSlot builder to this view.
      *
      * @param builder SubSlot builder
@@ -220,6 +241,7 @@ public class View implements InventoryHolder {
             var group = this.getGroup(builder.context);
             if (!group.slots.containsKey(slot)) group.slots.put(slot, new Slot());
             group.slots.get(slot).slotMap.put(builder.contextValue, new Slot.SubSlot(builder));
+            if (!group.possibleValues.contains(builder.contextValue)) group.possibleValues.add(builder.contextValue);
         }
     }
 
@@ -332,6 +354,40 @@ public class View implements InventoryHolder {
         var subSlot = getCurrent(slot);
         if (subSlot == null) return;
         subSlot.storage = null;
+    }
+
+    /**
+     * If this click will take the whole stack out of the clicked slot.
+     *
+     * @param event click event
+     * @return true if nothing is left in the slot after the click
+     */
+    private boolean takesAll(InventoryClickEvent event) {
+        var item = event.getCurrentItem();
+        if (item == null || item.isEmpty()) return true;
+        return switch (event.getAction()) {
+            case PICKUP_ALL, DROP_ALL_SLOT -> true;
+            case PICKUP_HALF, DROP_ONE_SLOT -> item.getAmount() == 1;
+            case MOVE_TO_OTHER_INVENTORY -> roomFor(item, event.getWhoClicked()) >= item.getAmount();
+            // only happens with oversized stacks, some always stays
+            default -> false;
+        };
+    }
+
+    /**
+     * How many of this item fit into the player's inventory.
+     *
+     * @param item item
+     * @param player player
+     * @return amount that fits
+     */
+    private int roomFor(ItemStack item, HumanEntity player) {
+        int room = 0;
+        for (var content : player.getInventory().getStorageContents()) {
+            if (content == null || content.isEmpty()) room += item.getMaxStackSize();
+            else if (content.isSimilar(item)) room += Math.max(0, content.getMaxStackSize() - content.getAmount());
+        }
+        return room;
     }
 
     /**
@@ -488,6 +544,10 @@ public class View implements InventoryHolder {
      */
     @ApiStatus.Internal
     public void onClose(InventoryCloseEvent event) {
+        // pending drag cursor
+        var pendingCursor = pendingCursors.remove(event.getPlayer().getUniqueId());
+        if (pendingCursor != null) event.getPlayer().setItemOnCursor(pendingCursor);
+
         // return slots with storage and return flag
         for (int i = 0; i < this.inventory.getSize(); i++) {
             var slot = getCurrent(i);
@@ -527,6 +587,12 @@ public class View implements InventoryHolder {
 
         // stop if event was canceled by some other plugin
         if (event.isCancelled()) return;
+
+        // drag not finished
+        if (pendingCursors.containsKey(event.getWhoClicked().getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
 
         // animation
         if (currentAnimation != null && !currentAnimation.allowClickPassthrough) event.setCancelled(true);
@@ -597,8 +663,8 @@ public class View implements InventoryHolder {
                     if (slot.preventModification) event.setCancelled(true);
                     if (slot.action != null) slot.action.run(event);
 
-                    // if we took an item, storage has to be false
-                    if (!event.isCancelled()) slot.storage = null;
+                    // if we took everything, storage has to be false
+                    if (!event.isCancelled() && takesAll(event)) slot.storage = null;
                 }
             }
 
@@ -674,8 +740,8 @@ public class View implements InventoryHolder {
                     if (slot.preventModification) event.setCancelled(true);
                     if (slot.action != null) slot.action.run(event);
 
-                    // if we took an item, storage has to be false
-                    if (!event.isCancelled()) slot.storage = null;
+                    // if we took everything, storage has to be false
+                    if (!event.isCancelled() && takesAll(event)) slot.storage = null;
                 }
             }
 
@@ -698,8 +764,8 @@ public class View implements InventoryHolder {
                     if (slot.preventModification) event.setCancelled(true);
                     if (slot.action != null) slot.action.run(event);
 
-                    // if we took an item, storage has to be false
-                    if (!event.isCancelled()) slot.storage = null;
+                    // if we took everything, storage has to be false
+                    if (!event.isCancelled() && takesAll(event)) slot.storage = null;
                 }
             }
 
@@ -953,13 +1019,18 @@ public class View implements InventoryHolder {
 
         var applicableSlots = slotMap.entrySet().stream().filter(e -> {
             var slot = e.getValue();
+            var currentItem = destinationInventory.getItem(e.getKey());
+            boolean empty = currentItem == null || currentItem.isEmpty();
+            boolean fits = empty || currentItem.isSimilar(transferStack) && currentItem.getAmount() < currentItem.getMaxStackSize();
+
+            if (slot == null) return fits;
+
             if (slot.requirement != null && !slot.requirement.isAllowed(transferStack)) return false;
             if (slot.preventPlace || slot.preventModification) return false;
-            if (slot.storage != null) {
-                var currentItem = destinationInventory.getItem(e.getKey());
-                return currentItem == null || currentItem.isSimilar(transferStack) && currentItem.getAmount() < currentItem.getMaxStackSize();
-            }
-            return true;
+
+            // placeholder, goes on top
+            if (slot.storage == null) return true;
+            return fits;
         }).map(Map.Entry::getKey).toList();
 
         // move items
@@ -967,10 +1038,11 @@ public class View implements InventoryHolder {
         for (var slot : applicableSlots) {
             if (remain <= 0) {break;}
             ItemStack curr = inventory.getItem(slot);
+            var subSlot = slotMap.get(slot);
 
             // trigger action right before setting the item
-            if (slotMap.get(slot).action != null) {
-                slotMap.get(slot).action.run(event);
+            if (subSlot != null && subSlot.action != null) {
+                subSlot.action.run(event);
                 if (event.isCancelled()) {
                     event.setCancelled(false);
                     continue; // don't add if action doesn't pass
@@ -978,10 +1050,10 @@ public class View implements InventoryHolder {
             }
 
             int addition;
-            if (curr == null || curr.isEmpty()) {
+            if (curr == null || curr.isEmpty() || subSlot != null && subSlot.storage == null) {
                 addition = Math.min(inventory.getMaxStackSize(), remain);
                 inventory.setItem(slot, transferStack.asQuantity(addition));
-                if (slotMap.containsKey(slot)) slotMap.get(slot).storage = event.getWhoClicked().getUniqueId();
+                if (subSlot != null) subSlot.storage = event.getWhoClicked().getUniqueId();
             } else {
                 addition = Math.min(curr.getMaxStackSize() - curr.getAmount(), remain);
                 curr.add(addition);
@@ -1006,6 +1078,8 @@ public class View implements InventoryHolder {
     public void onDrag(InventoryDragEvent event) {
         if (event.isCancelled()) return;
         event.setCancelled(true);
+
+        if (pendingCursors.containsKey(event.getWhoClicked().getUniqueId())) return;
 
         var slots = event.getRawSlots();
         var actualSlots = new HashSet<Integer>();
@@ -1039,7 +1113,9 @@ public class View implements InventoryHolder {
             var slotInv = event.getView().getInventory(slot);
             if (slotInv != null) {
                 int convertedSlot = event.getView().convertSlot(slot);
+                var subSlot = slotInv.equals(event.getView().getTopInventory()) ? getCurrent(convertedSlot) : null;
                 var oldSlot = slotInv.getItem(convertedSlot);
+                if (subSlot != null && subSlot.storage == null) oldSlot = null;
                 if (oldSlot != null && !oldSlot.isEmpty()) {
                     int amount = oldSlot.getAmount() + amountPerSlot;
                     if (amount > oldSlot.getMaxStackSize()) {
@@ -1050,13 +1126,18 @@ public class View implements InventoryHolder {
                 } else {
                     slotInv.setItem(event.getView().convertSlot(slot), oldCursor.asQuantity(amountPerSlot));
                 }
+
+                // if we placed an item, we set storage
+                if (subSlot != null) subSlot.storage = event.getWhoClicked().getUniqueId();
             }
         }
 
-        int finalRemain = remain;
+        // paper puts the old cursor back, so set it next tick
+        var uuid = event.getWhoClicked().getUniqueId();
+        pendingCursors.put(uuid, remain <= 0 ? ItemStack.empty() : oldCursor.asQuantity(remain));
         Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(View.class), () -> {
-            if (finalRemain <= 0) event.getWhoClicked().setItemOnCursor(null);
-            else event.getWhoClicked().setItemOnCursor(oldCursor.asQuantity(finalRemain));
+            var cursor = pendingCursors.remove(uuid);
+            if (cursor != null) event.getWhoClicked().setItemOnCursor(cursor);
         });
         update();
     }
@@ -1205,6 +1286,12 @@ public class View implements InventoryHolder {
 
                 context.run(new Slot.SubSlot.ValuedBuilder<>(this.view, item, this.context, contextVal, index, slot));
                 index++;
+            }
+
+            // lock unused slots on the last page
+            for (; slotVal < slots.length; slotVal++) {
+                if (this.view.isSet(slots[slotVal], this.context, contextVal)) continue;
+                new Slot.SubSlot.Builder(this.view, this.context, contextVal, slots[slotVal]).preventModification().build();
             }
         }
 
@@ -1383,7 +1470,7 @@ public class View implements InventoryHolder {
         /**
          * Will display item created with nextPageContext if pageContext has items in next contextValue. If not, noNextPageContext will be displayed.
          * <br><br>
-         * Item will be displayed in {@link CONTEXT#GLOBAL}, so it will be always visible.
+         * Item is set to every context value of pageContext, so it changes with the page. Should be called after the page contents are set.
          * <br><br>
          * Action <code>view.next(pageContext)</code> will be automatically added. If you want to create your own action, please remember to use {@link View#next(String)} again to make sure page is turned correctly.
          *
@@ -1393,21 +1480,23 @@ public class View implements InventoryHolder {
          * @param slots slot(s) to place to
          */
         public void nextPage(@NotNull String pageContext, @NotNull BuildContext nextPageContext, @NotNull BuildContext noNextPageContext, int... slots) {
-            var group = this.view().getGroup(pageContext);
-            if (group == null) noNextPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.DEFAULT, 0, slots));
+            var group = this.view.slotGroups.get(pageContext);
+            if (group == null || group.possibleValues.isEmpty()) {
+                noNextPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.DEFAULT, 0, slots));
+                return;
+            }
 
-            int i = 0;
-            while (view().hasContextValue(pageContext, i)) {
-                if (!view().hasContextValue(pageContext, i + 1)) noNextPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, i, slots));
-                else nextPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, i, slots).action(_ -> this.view.next(pageContext)));
-                i++;
+            var values = group.possibleValues.stream().sorted().toList();
+            for (int value : values) {
+                if (!values.contains(value + 1)) noNextPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, value, slots));
+                else nextPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, value, slots).action(_ -> this.view.next(pageContext)));
             }
         }
 
         /**
          * Will display item created with prevPageContext if pageContext has items in previous contextValue. If not, noPrevPageContext will be displayed.
          * <br><br>
-         * Item will be displayed in {@link CONTEXT#GLOBAL}, so it will be always visible.
+         * Item is set to every context value of pageContext, so it changes with the page. Should be called after the page contents are set.
          * <br><br>
          * Action <code>view.prev(pageContext)</code> will be automatically added. If you want to create your own action, please remember to use {@link View#prev(String)} again to make sure page is turned correctly.
          *
@@ -1417,14 +1506,16 @@ public class View implements InventoryHolder {
          * @param slots slot(s) to place to
          */
         public void prevPage(@NotNull String pageContext, @NotNull BuildContext prevPageContext, @NotNull BuildContext noPrevPageContext, int... slots) {
-            var group = this.view().getGroup(pageContext);
-            if (group == null) noPrevPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.DEFAULT, 0, slots));
+            var group = this.view.slotGroups.get(pageContext);
+            if (group == null || group.possibleValues.isEmpty()) {
+                noPrevPageContext.run(new Slot.SubSlot.Builder(this.view, CONTEXT.DEFAULT, 0, slots));
+                return;
+            }
 
-            int i = 0;
-            while (view().hasContextValue(pageContext, i)) {
-                if (i == 0) noPrevPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, i, slots));
-                else prevPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, i, slots).action(_ -> this.view.prev(pageContext)));
-                i++;
+            var values = group.possibleValues.stream().sorted().toList();
+            for (int value : values) {
+                if (!values.contains(value - 1)) noPrevPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, value, slots));
+                else prevPageContext.run(new Slot.SubSlot.Builder(this.view, pageContext, value, slots).action(_ -> this.view.prev(pageContext)));
             }
         }
 
