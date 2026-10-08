@@ -1,11 +1,13 @@
 package io.github.viimeinen1.ainventory.Slot;
 
+import io.github.viimeinen1.ainventory.Interfaces.DynamicBuildContext;
 import io.github.viimeinen1.ainventory.Interfaces.ItemClick;
 import io.github.viimeinen1.ainventory.Interfaces.ItemRequirement;
 import io.github.viimeinen1.ainventory.View.View;
 import io.papermc.paper.datacomponent.DataComponentType;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemLore;
+import io.papermc.paper.datacomponent.item.TooltipDisplay;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -90,6 +92,12 @@ public class Slot {
         public final boolean preventTake;
 
         /**
+         * Should this slot be cleared on next write
+         */
+        public final boolean clearOnWrite;
+
+
+        /**
          * Create a new SubSlot
          *
          * @param builder SubSlot builder
@@ -102,6 +110,18 @@ public class Slot {
             this.returnOnClose = builder.returnOnClose;
             this.preventPlace = builder.preventPlace;
             this.preventTake = builder.preventTake;
+            this.clearOnWrite = false;
+        }
+
+        public SubSlot(DynamicBuilder dynamicBuilder) {
+            this.item = dynamicBuilder.item;
+            this.action = dynamicBuilder.action;
+            this.requirement = dynamicBuilder.requirement;
+            this.preventModification = dynamicBuilder.preventModification;
+            this.returnOnClose = dynamicBuilder.returnOnClose;
+            this.preventPlace = dynamicBuilder.preventPlace;
+            this.preventTake = dynamicBuilder.preventTake;
+            this.clearOnWrite = dynamicBuilder.clearOnWrite;
         }
 
         /**
@@ -130,8 +150,8 @@ public class Slot {
         /**
          * SubSlot builder
          */
-        public static class Builder {
-            private final View view;
+        public static abstract class AbstractBuilder <T extends AbstractBuilder<T>> {
+            protected final View view;
 
             /**
              * Context this builder will be applied to.
@@ -147,13 +167,15 @@ public class Slot {
              * Slots this builder will be applied to.
              */
             public final int[] slots;
-            private ItemStack item = ItemStack.empty();
-            private ItemClick action = null; // click action
-            private ItemRequirement requirement = null; // requirement
-            private boolean preventModification = false; // should modification be prevented (button)
-            private boolean returnOnClose = false; // should the stored item be returned to player on inventory close
-            private boolean preventPlace = false; // should placing items to slot be prevented
-            private boolean preventTake = false; // should taking items from slot be prevented
+            protected ItemStack item = ItemStack.empty();
+            protected ItemClick action = null; // click action
+            protected ItemRequirement requirement = null; // requirement
+            protected boolean preventModification = false; // should modification be prevented (button)
+            protected boolean returnOnClose = false; // should the stored item be returned to player on inventory close
+            protected boolean preventPlace = false; // should placing items to slot be prevented
+            protected boolean preventTake = false; // should taking items from slot be prevented
+
+            protected abstract T self();
 
             /**
              * New SubSlot builder
@@ -163,7 +185,7 @@ public class Slot {
              * @param contextValue context value to apply this builder to
              * @param slots slots to apply this builder to
              */
-            public Builder(View view, String context, int contextValue, int... slots) {
+            public AbstractBuilder(View view, String context, int contextValue, int... slots) {
                 this.view = view;
                 this.context = context;
                 this.contextValue = contextValue;
@@ -176,9 +198,9 @@ public class Slot {
              * @param item item
              * @return this builder
              */
-            public Builder setItem(@NotNull ItemStack item) {
+            public T setItem(@NotNull ItemStack item) {
                 this.item = item.clone();
-                return this;
+                return self();
             }
 
             /**
@@ -187,10 +209,10 @@ public class Slot {
              * @param material material
              * @return this builder
              */
-            public Builder material(@NotNull Material material) {
+            public T material(@NotNull Material material) {
                 if (this.item.getAmount() == 0 || this.item.getType().equals(Material.AIR)) this.item = ItemStack.of(material);
                 else this.item = this.item.withType(material);
-                return this;
+                return self();
             }
 
             /**
@@ -200,9 +222,9 @@ public class Slot {
              * @param amount amount
              * @return this builder
              */
-            public Builder amount(int amount) {
+            public T amount(int amount) {
                 this.item.setAmount(amount);
-                return this;
+                return self();
             }
 
             /**
@@ -210,10 +232,9 @@ public class Slot {
              * @param name name as component.
              * @return this builder
              */
-            @SuppressWarnings("UnstableApiUsage")
-            public Builder name(@NotNull Component name) {
+            public T name(@NotNull Component name) {
                 this.item.setData(DataComponentTypes.ITEM_NAME, name);
-                return this;
+                return self();
             }
 
             /**
@@ -223,10 +244,9 @@ public class Slot {
              * @param name name as text
              * @return this builder
              */
-            @SuppressWarnings("UnstableApiUsage")
-            public Builder name(@NotNull String name) {
+            public T name(@NotNull String name) {
                 this.item.setData(DataComponentTypes.ITEM_NAME, MiniMessage.miniMessage().deserialize(name));
-                return this;
+                return self();
             }
 
             /**
@@ -235,14 +255,13 @@ public class Slot {
              * @param lore lore as components
              * @return this builder
              */
-            @SuppressWarnings("UnstableApiUsage")
-            public Builder lore(ComponentLike... lore) {
+            public T lore(ComponentLike... lore) {
                 var loreBuilder = ItemLore.lore();
                 for (var line : lore) {
                     loreBuilder.addLine(Objects.requireNonNullElseGet(line, Component::empty));
                 }
                 item.setData(DataComponentTypes.LORE, loreBuilder.build());
-                return this;
+                return self();
             }
 
             /**
@@ -250,10 +269,9 @@ public class Slot {
              *
              * @return this builder
              */
-            @SuppressWarnings("UnstableApiUsage")
-            public Builder lore() {
+            public T lore() {
                 item.setData(DataComponentTypes.LORE, ItemLore.lore().build());
-                return this;
+                return self();
             }
 
             /**
@@ -263,15 +281,14 @@ public class Slot {
              * @param lore lore as text
              * @return this builder
              */
-            @SuppressWarnings("UnstableApiUsage")
-            public Builder lore(String... lore) {
+            public T lore(String... lore) {
                 var loreBuilder = ItemLore.lore();
                 for (var line : lore) {
                     if (line == null) loreBuilder.addLine(Component.empty());
                     else loreBuilder.addLine(MiniMessage.miniMessage().deserialize(line));
                 }
                 item.setData(DataComponentTypes.LORE, loreBuilder.build());
-                return this;
+                return self();
             }
 
             /**
@@ -282,8 +299,7 @@ public class Slot {
              * @param lore lore as text
              * @return this builder
              */
-            @SuppressWarnings("UnstableApiUsage")
-            public Builder lore(Object... lore) {
+            public T lore(Object... lore) {
                 var loreBuilder = ItemLore.lore();
                 for (var line : lore) {
                     switch (line) {
@@ -293,7 +309,30 @@ public class Slot {
                     }
                 }
                 item.setData(DataComponentTypes.LORE, loreBuilder.build());
-                return this;
+                return self();
+            }
+
+            /**
+             * Helper method for hiding the tooltip if the item.<br>
+             * <br>
+             * Executes <code>Builder#setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hideTooltip(true).build())</code>.
+             * @return this builder
+             */
+            public T hideTooltip() {
+                return hideTooltip(true);
+            }
+
+            /**
+             * Helper method for hiding the tooltip of the item.<br>
+             * <br>
+             * Executes <code>Builder#setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hideTooltip(boolean).build())</code>.
+             *
+             * @param hide if tooltip should be hidden
+             * @return this builder
+             */
+            public T hideTooltip(boolean hide) {
+                this.item.setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay().hideTooltip(hide).build());
+                return self();
             }
 
             /**
@@ -303,12 +342,11 @@ public class Slot {
              * @param type type
              * @param value value
              * @return this builder
-             * @param <T> type of data
+             * @param <K> type of data
              */
-            @SuppressWarnings("UnstableApiUsage")
-            public <T> Builder setData(@NotNull DataComponentType.Valued<T> type, @NotNull T value) {
+            public <K> T setData(@NotNull DataComponentType.Valued<K> type, @NotNull K value) {
                 this.item.setData(type, value);
-                return this;
+                return self();
             }
 
             /**
@@ -317,9 +355,9 @@ public class Slot {
              * @param action click action
              * @return this builder
              */
-            public Builder action(@NotNull ItemClick action) {
+            public T action(@NotNull ItemClick action) {
                 this.action = action;
-                return this;
+                return self();
             }
 
             /**
@@ -329,9 +367,9 @@ public class Slot {
              * @param requirement requirement function
              * @return this builder
              */
-            public Builder require(ItemRequirement requirement) {
+            public T require(ItemRequirement requirement) {
                 this.requirement = requirement;
-                return this;
+                return self();
             }
 
             /**
@@ -340,9 +378,9 @@ public class Slot {
              *
              * @return this builder
              */
-            public Builder preventModification() {
+            public T preventModification() {
                 this.preventModification = true;
-                return this;
+                return self();
             }
 
             /**
@@ -352,9 +390,9 @@ public class Slot {
              * @param preventModification boolean
              * @return this builder
              */
-            public Builder preventModification(boolean preventModification) {
+            public T preventModification(boolean preventModification) {
                 this.preventModification = preventModification;
-                return this;
+                return self();
             }
 
             /**
@@ -363,9 +401,9 @@ public class Slot {
              *
              * @return this builder
              */
-            public Builder returnOnClose() {
+            public T returnOnClose() {
                 this.returnOnClose = true;
-                return this;
+                return self();
             }
 
             /**
@@ -375,9 +413,9 @@ public class Slot {
              * @param returnOnClose boolean
              * @return builder
              */
-            public Builder returnOnClose(boolean returnOnClose) {
+            public T returnOnClose(boolean returnOnClose) {
                 this.returnOnClose = returnOnClose;
-                return this;
+                return self();
             }
 
             /**
@@ -388,9 +426,9 @@ public class Slot {
              *
              * @return builder
              */
-            public Builder preventPlace() {
+            public T preventPlace() {
                 this.preventPlace = true;
-                return this;
+                return self();
             }
 
             /**
@@ -402,9 +440,9 @@ public class Slot {
              * @param preventPlace boolean
              * @return builder
              */
-            public Builder preventPlace(boolean preventPlace) {
+            public T preventPlace(boolean preventPlace) {
                 this.preventPlace = preventPlace;
-                return this;
+                return self();
             }
 
             /**
@@ -415,9 +453,9 @@ public class Slot {
              *
              * @return builder
              */
-            public Builder preventTake() {
+            public T preventTake() {
                 this.preventTake = true;
-                return this;
+                return self();
             }
 
             /**
@@ -429,9 +467,9 @@ public class Slot {
              * @param preventTake boolean
              * @return builder
              */
-            public Builder preventTake(boolean preventTake) {
+            public T preventTake(boolean preventTake) {
                 this.preventTake = preventTake;
-                return this;
+                return self();
             }
 
             /**
@@ -439,10 +477,33 @@ public class Slot {
              * <br><br>
              * If this is not called, this slot will not get added.
              */
-            public void build() {
-                view.applySlots(this);
+            abstract void build();
+
+        }
+
+        public static class Builder extends AbstractBuilder<Builder> {
+
+            @Override
+            protected Builder self() {
+                return this;
             }
 
+            /**
+             * New SubSlot builder
+             *
+             * @param view         view to apply this builder to
+             * @param context      context to apply this builder to
+             * @param contextValue context value to apply this builder to
+             * @param slots        slots to apply this builder to
+             */
+            public Builder(View view, String context, int contextValue, int... slots) {
+                super(view, context, contextValue, slots);
+            }
+
+            @Override
+            public void build() {
+                this.view.applySlots(this);
+            }
         }
 
         /**
@@ -472,6 +533,56 @@ public class Slot {
                 this.value = value;
                 this.index = index;
             }
+        }
+
+        public static class DynamicBuilder extends AbstractBuilder<DynamicBuilder> {
+
+            @Override
+            protected DynamicBuilder self() {
+                return this;
+            }
+
+            private boolean clearOnWrite = true;
+
+            /**
+             * New dynamic SubSlot builder
+             *
+             * @param view         view to apply this builder to
+             * @param context      context to apply this builder to
+             * @param contextValue context value to apply this builder to
+             * @param slots        slots to apply this builder to
+             */
+            public DynamicBuilder(View view, String context, int contextValue, int... slots) {
+                super(view, context, contextValue, slots);
+            }
+
+            /**
+             * If this item should be cleared on next write.<br>
+             * Default is true
+             * @param clearOnWrite true if slot should be wiped on next clear.
+             * @return this builder
+             */
+            public DynamicBuilder clearOnWrite(boolean clearOnWrite) {
+                this.clearOnWrite = clearOnWrite;
+                return this;
+            }
+
+            /**
+             * Apply the slot to the view if condition is met. If not, run the other builder.
+             *
+             * @param condition condition.
+             * @param orElse builder to use if condition is not met.
+             */
+            public void buildIfOrElse(boolean condition, DynamicBuildContext orElse) {
+                if (!condition) orElse.run(new DynamicBuilder(this.view, this.context, this.contextValue, this.slots));
+                else this.view.applySlots(this);
+            }
+
+            @Override
+            public void build() {
+                this.view.applySlots(this);
+            }
+
         }
     }
 }

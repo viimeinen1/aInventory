@@ -1,12 +1,10 @@
 package io.github.viimeinen1.ainventory.Inventory;
 
 import io.github.viimeinen1.ainventory.Interfaces.*;
-import io.github.viimeinen1.ainventory.Listeners.InventoryListener;
 import io.github.viimeinen1.ainventory.View.View;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.HumanEntity;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

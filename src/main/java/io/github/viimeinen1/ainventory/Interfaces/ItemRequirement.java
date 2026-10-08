@@ -7,5 +7,5 @@ import org.bukkit.inventory.ItemStack;
  */
 @FunctionalInterface
 public interface ItemRequirement {
-    boolean isAllowed(ItemStack item);
+    boolean prevent(ItemStack item);
 }
