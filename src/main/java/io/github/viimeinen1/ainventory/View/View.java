@@ -389,22 +389,27 @@ public class View implements InventoryHolder {
      * @param slots slots to write to
      */
     public void write(Inventory inventory, boolean update, int... slots) {
-        removePendingRemovalSlots();
-        for (int slotNum : slots) {
-            var dynamic = this.globalGroup.dynamicContextMap.get(slotNum);
-            if (dynamic != null) runDynamicBuilder(ContentBuilder.CONTEXT.GLOBAL, 0, slotNum);
 
-            var slot = this.globalGroup.slots.get(slotNum);
-            if (slot != null) slot.write(inventory, slotNum, 0);
+        // run on next tick to avoid conflict with actions (?)
+//        var plugin = JavaPlugin.getProvidingPlugin(this.getClass());
+//        Bukkit.getScheduler().runTask(plugin, () -> {
+            removePendingRemovalSlots();
+            for (int slotNum : slots) {
+                var dynamic = this.globalGroup.dynamicContextMap.get(slotNum);
+                if (dynamic != null) runDynamicBuilder(ContentBuilder.CONTEXT.GLOBAL, 0, slotNum);
 
-            for (var group : this.slotGroups.values()) {
-                dynamic = group.dynamicContextMap.get(slotNum);
-                if (dynamic != null) runDynamicBuilder(group.context, group.value, slotNum);
-                slot = group.slots.get(slotNum);
-                if (slot != null) slot.write(inventory, slotNum, group.value);
+                var slot = this.globalGroup.slots.get(slotNum);
+                if (slot != null) slot.write(inventory, slotNum, 0);
+
+                for (var group : this.slotGroups.values()) {
+                    dynamic = group.dynamicContextMap.get(slotNum);
+                    if (dynamic != null) runDynamicBuilder(group.context, group.value, slotNum);
+                    slot = group.slots.get(slotNum);
+                    if (slot != null) slot.write(inventory, slotNum, group.value);
+                }
             }
-        }
-        if (update) update();
+            if (update) update();
+//        });
     }
 
     /**
@@ -433,10 +438,14 @@ public class View implements InventoryHolder {
      * Update view to it's viewers
      */
     public void update() {
-        this.inventory.getViewers().forEach(viewer -> {
-            if (viewer instanceof Player pl) {
-                pl.updateInventory();
-            }
+        // test updating on next tick
+        var plugin = JavaPlugin.getProvidingPlugin(this.getClass());
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            this.inventory.getViewers().forEach(viewer -> {
+                if (viewer instanceof Player pl) {
+                    pl.updateInventory();
+                }
+            });
         });
     }
 

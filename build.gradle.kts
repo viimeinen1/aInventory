@@ -1,6 +1,6 @@
 group = "io.github.viimeinen1.ainventory"
-version = project.version
-description = project.description
+version = "3.4.0-pre1"
+description = "a Inventory GUI library"
 
 plugins {
   id("java")

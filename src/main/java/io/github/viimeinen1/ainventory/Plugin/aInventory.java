@@ -7,11 +7,13 @@ public class aInventory extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        super.onEnable();
         InventoryListener.registerListener();
     }
 
     @Override
     public void onDisable() {
+        super.onDisable();
         InventoryListener.unregisterListener();
     }
 
