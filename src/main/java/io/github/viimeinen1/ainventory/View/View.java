@@ -154,7 +154,7 @@ public class View implements InventoryHolder {
         this.inventory = Bukkit.createInventory(this, size.size(), title);
 
         // try initializing listener
-        InventoryListener.initializeListener();
+        InventoryListener.registerListener();
 
         reload();
     }
@@ -794,9 +794,20 @@ public class View implements InventoryHolder {
             }
 
             // placing
-            case PLACE_ALL, PLACE_ONE, PLACE_SOME -> {
+            case PLACE_ALL, PLACE_ONE, PLACE_SOME, PLACE_FROM_BUNDLE -> {
+                var item = event.getCursor();
+
+                // check for bundle
+                var contents = item.getData(DataComponentTypes.BUNDLE_CONTENTS);
+                if (contents != null) {
+                    if (contents.contents().isEmpty()) return;
+
+                    // the first item returned from contents should be the item placed into the slot.
+                    item = contents.contents().getFirst();
+                }
+
                 // wrong kind of item
-                if (slot.requirement != null && slot.requirement.prevent(event.getCursor())) event.setCancelled(true);
+                if (slot.requirement != null && slot.requirement.prevent(item)) event.setCancelled(true);
 
                 // no placing
                 else if (slot.preventPlace) event.setCancelled(true);
@@ -812,7 +823,8 @@ public class View implements InventoryHolder {
             }
 
             // picking up
-            case PICKUP_ALL, PICKUP_ONE, PICKUP_SOME, PICKUP_HALF -> {
+            // adding to bundle should work the same
+            case PICKUP_ALL, PICKUP_ONE, PICKUP_SOME, PICKUP_HALF, PICKUP_ALL_INTO_BUNDLE, PICKUP_SOME_INTO_BUNDLE -> {
                 // no taking
                 if (slot.preventTake) event.setCancelled(true);
 
@@ -914,38 +926,6 @@ public class View implements InventoryHolder {
 
             // move
             case MOVE_TO_OTHER_INVENTORY -> {
-                // no taking
-                if (slot.preventTake) event.setCancelled(true);
-
-                // no prevents
-                else {
-                    if (slot.preventModification) event.setCancelled(true);
-                    if (slot.action != null) slot.action.run(event);
-
-                    // if we took everything, storage has to be false
-                    if (!event.isCancelled() && takesAll(event)) slot.storage = null;
-                }
-            }
-
-            // bundle
-            case PLACE_FROM_BUNDLE -> {
-                // wrong kind of item
-                if (slot.requirement != null && slot.requirement.prevent(event.getCursor())) event.setCancelled(true);
-
-                // no placing
-                else if (slot.preventPlace) event.setCancelled(true);
-
-                // no prevents
-                else {
-                    if (slot.preventModification) event.setCancelled(true);
-                    if (slot.action != null) slot.action.run(event);
-
-                    // if we placed an item, we set storage to true
-                    if (!event.isCancelled()) slot.storage = event.getWhoClicked().getUniqueId();
-                }
-            }
-
-            case PICKUP_ALL_INTO_BUNDLE, PICKUP_SOME_INTO_BUNDLE -> {
                 // no taking
                 if (slot.preventTake) event.setCancelled(true);
 

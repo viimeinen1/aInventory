@@ -1,0 +1,6 @@
+name: aInventory
+version: '3.4.0'
+api-version: '26.2'
+main: io.github.viimeinen1.ainventory.plugin.aInventory
+description: a Inventory GUI library
+author: viimeinen1

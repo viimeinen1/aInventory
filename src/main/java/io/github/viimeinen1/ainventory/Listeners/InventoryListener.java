@@ -2,6 +2,7 @@ package io.github.viimeinen1.ainventory.Listeners;
 
 import io.github.viimeinen1.ainventory.View.View;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -17,17 +18,24 @@ public class InventoryListener implements Listener {
      */
     public static boolean initialized = false;
 
+    private static final InventoryListener instance = new InventoryListener();
+
     /**
-     * Initialize listener for aInventory.
+     * Register listener for aInventory.
      * Without initializing the listener, the click functions will not work.
      * <br><br>
      * Will fail silently if this listener was already initialized
      */
-    public static void initializeListener() {
+    public static void registerListener() {
         if (initialized) return;
         var plugin = JavaPlugin.getProvidingPlugin(InventoryListener.class);
-        plugin.getServer().getPluginManager().registerEvents(new InventoryListener(), plugin);
+        plugin.getServer().getPluginManager().registerEvents(instance, plugin);
         initialized = true;
+    }
+
+    public static void unregisterListener() {
+        if (!initialized) return;
+        HandlerList.unregisterAll(instance);
     }
 
     @EventHandler
