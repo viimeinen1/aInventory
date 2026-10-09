@@ -1,10 +1,10 @@
 group = "io.github.viimeinen1.ainventory"
-version = "3.3.0"
-description = "Inventory GUI library"
+version = "3.4.0-pre1"
+description = "a Inventory GUI library"
 
 plugins {
   id("java")
-  id("com.vanniktech.maven.publish") version "0.34.0"
+  id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 repositories {
@@ -25,7 +25,6 @@ java {
 
 mavenPublishing {
   publishToMavenCentral()
-  
   signAllPublications()
 }
 

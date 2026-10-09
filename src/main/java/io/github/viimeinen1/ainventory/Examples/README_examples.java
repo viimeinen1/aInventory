@@ -7,10 +7,14 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.List;
 import java.util.UUID;
 
 public class README_examples {
+
+    /*
+        All options are optional, even this is a valid inventory (tough with no content)
+     */
+    Inventory emptyInventory = Inventory.builder().build();
 
     /*
         Basic inventory usage
@@ -45,18 +49,13 @@ public class README_examples {
 
         // creating inventory content
         .content(c -> {
-
-            // set inventory content here
-
+            c.dynamic(b -> {
+                b.buildIfOrElse(true, b1 -> b1.hideTooltip().preventModification().build());
+            }, 0);
         })
 
         // build inventory
         .build();
-
-    /*
-        All options are optional, even this is a valid inventory (tough with no content)
-     */
-    Inventory emptyInventory = Inventory.builder().build();
 
     // then we can open inventories with just calling Inventory#open(HumanEntity)
     public void openForPlayer(Player player) {

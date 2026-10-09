@@ -15,6 +15,12 @@ Library does not currently support animations (easily), or other inventory sizes
 - Patterns
 - GUIs with custom keys for better multi-view GUI support
 
+## TODO
+- Bundle compatibility
+- dynamic slots
+- complete placeholder implementation
+- single slot `write`
+
 ## Add as dependency
 
 To use the library in your project, add it as a dependency.
