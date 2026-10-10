@@ -1,5 +1,5 @@
 group = "io.github.viimeinen1.ainventory"
-version = "3.4.0-pre1"
+version = "3.4.0-pre2"
 description = "a Inventory GUI library"
 
 plugins {
@@ -26,6 +26,14 @@ java {
 mavenPublishing {
   publishToMavenCentral()
   signAllPublications()
+}
+
+sourceSets {
+  main {
+    java {
+      exclude("io/github/viimeinen1/ainventory/Examples/**")
+    }
+  }
 }
 
 mavenPublishing {
