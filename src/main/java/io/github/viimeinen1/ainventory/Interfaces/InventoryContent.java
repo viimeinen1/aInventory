@@ -7,5 +7,9 @@ import io.github.viimeinen1.ainventory.View.View;
  */
 @FunctionalInterface
 public interface InventoryContent {
+    /**
+     * Run inventory content builder
+     * @param builder content builder
+     */
     void run(View.ContentBuilder builder);
 }

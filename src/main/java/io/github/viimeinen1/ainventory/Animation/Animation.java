@@ -13,15 +13,33 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * Inventory animation
+ */
 public class Animation {
 
+    /** items in this animation */
     public final HashMap<String, ItemStack> items = new HashMap<>();
+    /** frames of the animation */
     public final List<Frame> frames = new ArrayList<>();
+    /** if clicks actions should be allowed during animation */
     public final boolean allowClickPassthrough;
+    /** callback after animation */
     public final Runnable callback;
 
+    /**
+     * Frame of animation
+     * @param displayTime how long frame is displayed for
+     * @param pattern pattern for this frame
+     */
     public record Frame(long displayTime, String[] pattern) {}
 
+    /**
+     * Construct items from pattern and items.
+     * @param pattern pattern
+     * @param items map of items and their respective selectors
+     * @return array of items
+     */
     public ItemStack[] constructFrame(String[] pattern, HashMap<String, ItemStack> items) {
         ArrayList<ItemStack> frame = new ArrayList<>();
         for (String line : pattern) {
@@ -32,12 +50,13 @@ public class Animation {
         return frame.toArray(new ItemStack[0]);
     }
 
+    /** how long until next frame */
     public long ticksUntilNextFrame = 0;
+    /** current frame in display */
     public ItemStack[] currentFrame = null;
 
     /**
      * Run animation in inventory. After animation, the callback is run.
-     *
      * @param inventory display inventory
      * @param callback callback
      */
@@ -75,6 +94,10 @@ public class Animation {
         }, 1L, 1L);
     }
 
+    /**
+     * Build animation from builder
+     * @param builder builder
+     */
     public Animation(Builder builder) {
         this.items.putAll(builder.items);
         this.frames.addAll(builder.frames);
@@ -86,8 +109,16 @@ public class Animation {
         }
     }
 
+    /**
+     * Animation builder
+     */
     public static class Builder {
 
+        /**
+         * Animation builder
+         * @param id id of this animation
+         * @param view view to add this animation to
+         */
         public Builder(String id, View view) {
             this.view = view;
             this.id = id;

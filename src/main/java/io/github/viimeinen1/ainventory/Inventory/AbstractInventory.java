@@ -1,12 +1,10 @@
 package io.github.viimeinen1.ainventory.Inventory;
 
 import io.github.viimeinen1.ainventory.Interfaces.*;
-import io.github.viimeinen1.ainventory.Listeners.InventoryListener;
 import io.github.viimeinen1.ainventory.View.View;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.HumanEntity;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,11 +19,17 @@ public abstract class AbstractInventory {
      * Inventory size
      */
     public enum SIZE {
+        /** 9x1 Chest inventory */
         CHEST_9x1(9),
+        /** 9x2 Chest inventory */
         CHEST_9x2(18),
+        /** 9x3 Chest inventory */
         CHEST_9x3(27),
+        /** 9x4 Chest inventory */
         CHEST_9x4(36),
+        /** 9x5 Chest inventory */
         CHEST_9x5(45),
+        /** 9x6 Chest inventory */
         CHEST_9x6(54);
 
         private final int size;
@@ -34,7 +38,8 @@ public abstract class AbstractInventory {
         }
 
         /**
-         * @return size of this type of inventory
+         * Get size of this type of inventory.
+         * @return size of inventory
          */
         public int size() {
             return this.size;
@@ -56,10 +61,17 @@ public abstract class AbstractInventory {
     }
 
     /**
+     * Get view associated with this player.
      * @param player player (or null)
      * @return view associated with this player, or default inventory if null
      */
     public abstract @NotNull View getView(@Nullable HumanEntity player);
+
+    /**
+     * Manually remove view. Will close all viewers' gui. New view will be reconstructed on next use of this inventory.
+     * @param player player
+     */
+    public abstract void deleteView(@Nullable HumanEntity player);
 
     /**
      * Reload this inventory.
@@ -94,15 +106,29 @@ public abstract class AbstractInventory {
      *  Inventory builder.
      */
     public static class Builder {
-        protected SIZE size; // size of inventory
-        protected InventoryContent content; // content creation function
-        protected ItemClick onClick; // default action
-        protected Component title; // title of inventory
-        protected InventoryRequirement requirement; // requirement to open
-        protected InventoryOpen open; // open action
-        protected InventoryClose close; // close action
-        protected boolean whitelisted = false; // if only whitelisted players can access inventory
-        protected Set<UUID> whitelist = new HashSet<>(); // whitelisted players
+        /** size of inventory */
+        protected SIZE size;
+        /** size of inventory */
+        protected InventoryContent content;
+        /** default action */
+        protected ItemClick onClick;
+        /** title of inventory */
+        protected Component title;
+        /** requirement to open */
+        protected InventoryRequirement requirement;
+        /** open action */
+        protected InventoryOpen open;
+        /** close action */
+        protected InventoryClose close;
+        /** if only whitelisted players can access inventory */
+        protected boolean whitelisted = false;
+        /** whitelisted players */
+        protected Set<UUID> whitelist = new HashSet<>();
+
+        /**
+         * Inventory builder
+         */
+        public Builder() { }
 
         /**
          * What happens when any slot in inventory is clicked, or any slot is modified.
@@ -118,6 +144,7 @@ public abstract class AbstractInventory {
         }
 
         /**
+         * Add open function.
          * @param fn action that is executed when inventory is opened
          * @return this builder
          */
@@ -127,6 +154,7 @@ public abstract class AbstractInventory {
         }
 
         /**
+         * Add close function.
          * @param fn action that is executed when inventory is closed
          * @return this builder
          */
@@ -233,7 +261,9 @@ public abstract class AbstractInventory {
 
         /**
          * Build inventory where all players have their own unique view of the inventory.
-         * Changes in one player's inventory will not affect other player's views.
+         * Changes in one player's inventory will not affect other player's views.<br>
+         * <br>
+         * View will get removed after player logs out, so if someone else is viewing inventory built for the player, the inventory will close.
          *
          * @return new Inventory
          */

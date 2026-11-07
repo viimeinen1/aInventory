@@ -7,5 +7,10 @@ import org.bukkit.entity.Player;
  */
 @FunctionalInterface
 public interface InventoryRequirement {
+    /**
+     * Run inventory requirement function.
+     * @param Player player
+     * @return true if player can access this inventory
+     */
     boolean run(Player Player);
 }

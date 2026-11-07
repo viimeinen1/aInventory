@@ -7,5 +7,9 @@ import io.github.viimeinen1.ainventory.Slot.Slot;
  */
 @FunctionalInterface
 public interface BuildContext {
+    /**
+     * Run slot builder
+     * @param builder builder
+     */
     void run(Slot.SubSlot.Builder builder);
 }

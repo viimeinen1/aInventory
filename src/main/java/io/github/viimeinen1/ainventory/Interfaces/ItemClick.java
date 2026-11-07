@@ -7,5 +7,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
  */
 @FunctionalInterface
 public interface ItemClick {
+    /**
+     * Run inventory click action
+     * @param event event
+     */
     void run(InventoryClickEvent event);
 }

@@ -2,13 +2,19 @@ package io.github.viimeinen1.ainventory.Inventory;
 
 import io.github.viimeinen1.ainventory.View.View;
 import org.bukkit.entity.HumanEntity;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
+/**
+ * Inventory which opens unique view for each viewing entity.
+ */
 public class Inventory extends AbstractInventory {
+
+    /** All views inside this inventory */
+    @ApiStatus.Internal
     public final HashMap<UUID, View> views = new HashMap<>();
 
     /**
@@ -55,10 +61,11 @@ public class Inventory extends AbstractInventory {
      */
     @Override
     public @NotNull View getView(@Nullable HumanEntity player) {
-        if (player == null) throw new IllegalArgumentException("uuid cannot be null");
+        if (player == null) throw new UnsupportedOperationException("uuid cannot be null");
         var view = views.get(player.getUniqueId());
         if (view == null) {
             view = new View(
+                this,
                 this.inventoryBuilder.size,
                 this.inventoryBuilder.content,
                 this.inventoryBuilder.onClick,
@@ -73,6 +80,18 @@ public class Inventory extends AbstractInventory {
             this.views.put(player.getUniqueId(), view);
         }
         return view;
+    }
+
+    /**
+     * Manually remove view linked to a player. Will close the view for all viewers, and remove it completely.
+     * All content inside will be lost if they are not returned on close.
+     * New inventory will be created when player opens new inventory.
+     * @param player player
+     */
+    public void deleteView(@Nullable HumanEntity player) {
+        if (player == null) throw new UnsupportedOperationException("uuid cannot be null");
+        var view = views.remove(player.getUniqueId());
+        if (view != null) view.delete();
     }
 
 }

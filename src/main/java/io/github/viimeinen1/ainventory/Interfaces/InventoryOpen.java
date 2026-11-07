@@ -7,5 +7,9 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
  */
 @FunctionalInterface
 public interface InventoryOpen {
+    /**
+     * Run inventory open function
+     * @param event open event
+     */
     void run(InventoryOpenEvent event);
 }

@@ -20,6 +20,11 @@ public class Gui<T> {
     public final Map<T, AbstractInventory> inventories = new HashMap<>();
 
     /**
+     * Gui for storing multiple inventories easier.
+     */
+    public Gui() {}
+
+    /**
      * Open inventory that is associated with that key.
      * If there is no such inventory, will fail silently.
      *

@@ -1,10 +1,10 @@
 group = "io.github.viimeinen1.ainventory"
-version = "3.3.0"
-description = "Inventory GUI library"
+version = "3.4.0-pre5"
+description = "a Inventory GUI library"
 
 plugins {
   id("java")
-  id("com.vanniktech.maven.publish") version "0.34.0"
+  id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 repositories {
@@ -25,8 +25,16 @@ java {
 
 mavenPublishing {
   publishToMavenCentral()
-  
   signAllPublications()
+}
+
+// remove examples from build file
+sourceSets {
+  main {
+    java {
+      exclude("io/github/viimeinen1/ainventory/Examples/**")
+    }
+  }
 }
 
 mavenPublishing {

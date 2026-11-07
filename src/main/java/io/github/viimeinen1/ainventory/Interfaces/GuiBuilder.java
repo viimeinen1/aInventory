@@ -9,5 +9,9 @@ import io.github.viimeinen1.ainventory.GUI.Gui;
  */
 @FunctionalInterface
 public interface GuiBuilder<T> {
+    /**
+     * Run gui builder
+     * @param builder gui builder
+     */
     void run(Gui.Builder<T> builder);
 }
