@@ -293,14 +293,12 @@ public class View implements InventoryHolder {
         if (this.globalGroup.slots.containsKey(slot) && this.globalGroup.slots.get(slot).slotMap.containsKey(0)) {
             return globalGroup.slots.get(slot).slotMap.get(0);
         }
-
-        Slot.SubSlot curr = null;
         for (SlotGroup group : this.slotGroups.values()) {
             if (group.hasSlot(slot)) {
-                curr = group.getCurrent(slot);
+                return group.getCurrent(slot);
             }
         }
-        return curr;
+        return null;
     }
 
     /**
@@ -469,10 +467,10 @@ public class View implements InventoryHolder {
         removePendingRemovalSlots();
         for (int slotNum : slots) {
             runDynamicBuilder(this.globalGroup, slotNum);
-            writeToSlot(inventory, this.globalGroup, slotNum);
+            if (writeToSlot(inventory, this.globalGroup, slotNum)) continue; // display only global if it exists
             for (var group : this.slotGroups.values()) {
                 runDynamicBuilder(group, slotNum);
-                writeToSlot(inventory, group, slotNum);
+                if (writeToSlot(inventory, group, slotNum)) break; // display first possible value
             }
         }
         if (update) update();
@@ -483,12 +481,13 @@ public class View implements InventoryHolder {
      * @param inv inventory to write to
      * @param group group
      * @param slotNum slot
+     * @return if something was written.
      */
-    private void writeToSlot(Inventory inv, SlotGroup group, int slotNum) {
-        if (group == null) return;
+    private boolean writeToSlot(Inventory inv, SlotGroup group, int slotNum) {
+        if (group == null) return false;
         var slot = group.slots.get(slotNum);
-        if (slot == null) return;
-        slot.write(inv, group.value, slotNum);
+        if (slot == null) return false;
+        return slot.write(inv, group.value, slotNum);
     }
 
     /**

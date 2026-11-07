@@ -40,6 +40,7 @@ public class Slot {
      * @param inventory inventory to write to
      * @param slot slot to write to
      * @param value context value of what to write from
+     * @return true if something was written.
      */
     public boolean write(Inventory inventory, int value, int slot) {
         var subSlot = slotMap.get(value);
