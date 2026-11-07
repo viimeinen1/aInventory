@@ -294,12 +294,13 @@ public class View implements InventoryHolder {
             return globalGroup.slots.get(slot).slotMap.get(0);
         }
 
+        Slot.SubSlot curr = null;
         for (SlotGroup group : this.slotGroups.values()) {
             if (group.hasSlot(slot)) {
-                return group.getCurrent(slot);
+                curr = group.getCurrent(slot);
             }
         }
-        return null;
+        return curr;
     }
 
     /**
