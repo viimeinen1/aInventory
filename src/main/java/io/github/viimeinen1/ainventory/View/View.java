@@ -515,10 +515,8 @@ public class View implements InventoryHolder {
      * Done on next tick to avoid sudden jumps in gui. Generally updating on next tick is enough. If you want to update on the same tick, use {@link View#updateNow()}
      */
     public void update() {
-        var plugin = JavaPlugin.getProvidingPlugin(this.getClass()); // use whatever plugin loaded this class
-
         // update on next tick to avoid sudden changes in inventory
-        Bukkit.getScheduler().runTask(plugin, this::updateNow);
+        runOnNextTick(this::updateNow);
     }
 
     /**
@@ -540,10 +538,18 @@ public class View implements InventoryHolder {
      *
      * @param player player
      */
-    public void open(HumanEntity player) {
+    public void open(@NotNull HumanEntity player) {
         if (reloadOnNextOpen) applyReload();
         else write();
         player.openInventory(this.inventory);
+    }
+
+    /**
+     * Close inventory of player on next tick.
+     * @param player player
+     */
+    public static void close(@NotNull HumanEntity player) {
+        runOnNextTick(player::closeInventory);
     }
 
     /**
@@ -608,7 +614,9 @@ public class View implements InventoryHolder {
         var subSlot = getCurrent(slot);
         if (subSlot != null) subSlot.storage = null;
         var item = this.inventory.getItem(slot);
-        this.write(false, slot); // write over the slot
+        // write over the slot
+        // do it only after next tick, since the item needs to be taken out first
+        runOnNextTick(() -> this.write(false, slot));
         return item;
     }
 
@@ -776,6 +784,16 @@ public class View implements InventoryHolder {
     }
 
     /**
+     * Run task on next tick.
+     *
+     * @param task task
+     */
+    public static void runOnNextTick(@NotNull Runnable task) {
+        var plugin = JavaPlugin.getProvidingPlugin(View.class);
+        Bukkit.getScheduler().runTask(plugin, task);
+    }
+
+    /**
      * Handling opening this view. This should never be manually run.
      *
      * @param event InventoryOpenEvent
@@ -856,8 +874,7 @@ public class View implements InventoryHolder {
         // whitelist
         if (whitelisted && !whitelist.contains(event.getWhoClicked().getUniqueId())) {
             event.setCancelled(true);
-            Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(View.class), () -> event.getWhoClicked().closeInventory());
-            JavaPlugin.getProvidingPlugin(View.class);
+            runOnNextTick(() -> event.getWhoClicked().closeInventory());
             return;
         }
 
@@ -951,7 +968,7 @@ public class View implements InventoryHolder {
                         // phantom take; remove from cursor on next tick (if the event goes through)
                         // do same if slot is placeholder and there's no player placed items in the slot
                         if (slot.preventTake || (slot.storage == null && slot.placeholder)) {
-                            Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(View.class), () -> event.getWhoClicked().setItemOnCursor(ItemStack.empty()));
+                            runOnNextTick(() -> event.getWhoClicked().setItemOnCursor(ItemStack.empty()));
                         }
 
                         slot.storage = event.getWhoClicked().getUniqueId();
@@ -981,7 +998,7 @@ public class View implements InventoryHolder {
                         // phantom remove; remove from slot on next tick (if the event goes through)
                         // do same if slot is placeholder and there's no player placed items in the slot
                         if (slot.preventTake || (slot.storage == null && slot.placeholder)) {
-                            Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(View.class), () -> {
+                            runOnNextTick(() -> {
                                 if (event.getHotbarButton() == -1) event.getWhoClicked().getInventory().setItemInOffHand(ItemStack.empty());
                                 else event.getWhoClicked().getInventory().setItem(event.getHotbarButton(), ItemStack.empty());
                             });
@@ -1391,7 +1408,7 @@ public class View implements InventoryHolder {
         // paper puts the old cursor back, so set it next tick
         var uuid = event.getWhoClicked().getUniqueId();
         pendingCursors.put(uuid, remain <= 0 ? ItemStack.empty() : oldCursor.asQuantity(remain));
-        Bukkit.getScheduler().runTask(JavaPlugin.getProvidingPlugin(View.class), () -> {
+        runOnNextTick(() -> {
             var cursor = pendingCursors.remove(uuid);
             if (cursor != null) event.getWhoClicked().setItemOnCursor(cursor);
         });
