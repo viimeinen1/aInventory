@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Inventory which opens unique view for each viewing entity.
@@ -15,7 +16,7 @@ public class Inventory extends AbstractInventory {
 
     /** All views inside this inventory */
     @ApiStatus.Internal
-    public final HashMap<UUID, View> views = new HashMap<>();
+    public final ConcurrentHashMap<UUID, View> views = new ConcurrentHashMap<>();
 
     /**
      * Create new inventory
